@@ -28,7 +28,7 @@ public abstract class LivingEntityMixin {
     @Inject(method = "setHealth", at = @At("RETURN"))
     private void onSetHealth(float health, CallbackInfo ci) {
         //noinspection ConstantValue
-        if ((Object) this instanceof ServerPlayer serverPlayer) {
+        if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
             PlayerDataCallback.INSTANCE.getHEALTH_CHANGED().invoker().onHealthChanged(serverPlayer);
         }
     }
@@ -43,7 +43,7 @@ public abstract class LivingEntityMixin {
     private void onAddEffect(MobEffectInstance effectInstance, Entity source, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue()) {
             //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer) {
+            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
                 PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
             }
         }
@@ -56,7 +56,7 @@ public abstract class LivingEntityMixin {
     private void onRemoveEffect(CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue()) {
             //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer) {
+            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
                 PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
             }
         }
@@ -69,7 +69,7 @@ public abstract class LivingEntityMixin {
     private void onRemoveAllEffects(CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue()) {
             //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer) {
+            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
                 PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
             }
         }
@@ -83,7 +83,7 @@ public abstract class LivingEntityMixin {
     @Inject(method = "setItemSlot", at = @At("RETURN"))
     private void onSetItemSlot(EquipmentSlot slot, ItemStack stack, CallbackInfo ci) {
         //noinspection ConstantValue
-        if ((Object) this instanceof ServerPlayer serverPlayer) {
+        if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
             PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker().onEquipmentChanged(serverPlayer, slot, stack);
         }
     }
