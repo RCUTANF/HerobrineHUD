@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "herobrinehud",
+  "version": "${version}",
+  "name": "HerobrineHUD",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/herobrinehud/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "com.RCUTANF.herobrinehud.client.HerobrinehudDataGenerator"
+    ],
+    "client": [
+      "com.RCUTANF.herobrinehud.client.HerobrinehudClient"
+    ],
+    "main": [
+      "com.RCUTANF.herobrinehud.Herobrinehud"
+    ]
+  },
+  "mixins": [
+    "herobrinehud.mixins.json",
+    {
+      "config": "herobrinehud.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
