@@ -40,9 +40,12 @@ data class PlayerInfo(
  */
 @Serializable
 data class Equipment(
-    var weapon: String? = null,                        // 当前武器
-    var armor: String? = null,                         // 护甲类型
-    var items: MutableList<String> = mutableListOf()   // 物品列表
+    var helmet: String? = null,                        // 头盔类型
+    var chestplate: String? = null,                    // 胸甲类型
+    var leggings: String? = null,                      // 护腿类型
+    var boots: String? = null,                         // 鞋子类型
+    var mainHand: String? = null,                     // 主手物品类型
+    var offHand: String? = null                      // 副手物品类型
 )
 
 @Serializable

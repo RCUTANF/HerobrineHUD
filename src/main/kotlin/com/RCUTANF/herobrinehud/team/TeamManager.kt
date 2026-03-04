@@ -1,11 +1,13 @@
 package com.RCUTANF.herobrinehud.team
 
+import com.RCUTANF.herobrinehud.data.Equipment
 import com.RCUTANF.herobrinehud.data.PlayerEffect
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.network.TeamSyncManager
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.scores.PlayerTeam
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -198,10 +200,19 @@ object TeamManager {
         })
 
         // 装备变化（同时更新护甲值）
-        PlayerDataCallback.EQUIPMENT_CHANGED.register(PlayerDataCallback.EquipmentChanged { player ->
+        PlayerDataCallback.EQUIPMENT_CHANGED.register(PlayerDataCallback.EquipmentChanged { player, slot, stack ->
             updateAndNotify(player) { info ->
                 info.armor = player.armorValue
-                // TODO: 如果需要详细装备信息，可在此处更新 info.equipment
+                val itemId = if (stack.isEmpty) null else stack.item.builtInRegistryHolder().key().identifier().toString()
+                when (slot) {
+                    EquipmentSlot.HEAD -> info.equipment.helmet = itemId
+                    EquipmentSlot.CHEST -> info.equipment.chestplate = itemId
+                    EquipmentSlot.LEGS -> info.equipment.leggings = itemId
+                    EquipmentSlot.FEET -> info.equipment.boots = itemId
+                    EquipmentSlot.MAINHAND -> info.equipment.mainHand = itemId
+                    EquipmentSlot.OFFHAND -> info.equipment.offHand = itemId
+                    else -> {}
+                }
             }
         })
 
@@ -344,6 +355,7 @@ object TeamManager {
             armor = player.armorValue,
             isAlive = player.isAlive,
             dimension = player.level().dimension().toString(),
+            equipment = extractEquipment(player),
             effects = effects
         )
     }
@@ -374,6 +386,28 @@ object TeamManager {
         } else {
             "#FFFFFF"
         }
+    }
+
+    /**
+     * 从在线玩家提取装备信息
+     */
+    private fun extractEquipment(player: ServerPlayer): Equipment {
+        return Equipment(
+            helmet = getItemId(player, EquipmentSlot.HEAD),
+            chestplate = getItemId(player, EquipmentSlot.CHEST),
+            leggings = getItemId(player, EquipmentSlot.LEGS),
+            boots = getItemId(player, EquipmentSlot.FEET),
+            mainHand = getItemId(player, EquipmentSlot.MAINHAND),
+            offHand = getItemId(player, EquipmentSlot.OFFHAND)
+        )
+    }
+
+    /**
+     * 获取指定装备槽位的物品标识符，空物品返回 null
+     */
+    private fun getItemId(player: ServerPlayer, slot: EquipmentSlot): String? {
+        val stack = player.getItemBySlot(slot)
+        return if (stack.isEmpty) null else stack.item.builtInRegistryHolder().key().identifier().toString()
     }
 
     // ──────────────── 查询接口 ────────────────

@@ -3,6 +3,8 @@ package com.RCUTANF.herobrinehud.team
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.GameType
 
 /**
@@ -67,8 +69,8 @@ object PlayerDataCallback {
 
     /** 玩家装备/物品变化时触发（同时影响护甲值） */
     val EQUIPMENT_CHANGED: Event<EquipmentChanged> = EventFactory.createArrayBacked(EquipmentChanged::class.java) { listeners ->
-        EquipmentChanged { player ->
-            listeners.forEach { it.onEquipmentChanged(player) }
+        EquipmentChanged { player, slot, stack ->
+            listeners.forEach { it.onEquipmentChanged(player, slot, stack) }
         }
     }
 
@@ -115,7 +117,7 @@ object PlayerDataCallback {
     }
 
     fun interface EquipmentChanged {
-        fun onEquipmentChanged(player: ServerPlayer)
+        fun onEquipmentChanged(player: ServerPlayer, slot: EquipmentSlot, stack: ItemStack)
     }
 
     fun interface PlayerJoinedServer {

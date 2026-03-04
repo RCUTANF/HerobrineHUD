@@ -84,7 +84,7 @@ public abstract class LivingEntityMixin {
     private void onSetItemSlot(EquipmentSlot slot, ItemStack stack, CallbackInfo ci) {
         //noinspection ConstantValue
         if ((Object) this instanceof ServerPlayer serverPlayer) {
-            PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker().onEquipmentChanged(serverPlayer);
+            PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker().onEquipmentChanged(serverPlayer, slot, stack);
         }
     }
 }
