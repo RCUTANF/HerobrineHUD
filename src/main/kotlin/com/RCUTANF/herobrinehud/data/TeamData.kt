@@ -1,6 +1,7 @@
 package com.RCUTANF.herobrinehud.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class TeamInfo(
@@ -12,7 +13,7 @@ data class TeamInfo(
     val players: MutableList<PlayerInfo> = mutableListOf(),
 
     // 自定义数据（灵活扩展）
-    val customData: MutableMap<String, Any> = mutableMapOf()
+    val customData: MutableMap<String, JsonElement> = mutableMapOf()
 ) {
 
 }
