@@ -4,6 +4,11 @@
   "package": "com.RCUTANF.herobrinehud.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "LivingEntityMixin",
+    "ScoreboardMixin",
+    "ServerPlayerGameModeMixin",
+    "ServerPlayerMixin",
+    "ServerScoreboardMixin"
   ],
   "injectors": {
     "defaultRequire": 1
