@@ -18,6 +18,9 @@ class HerobrinehudClient : ClientModInitializer {
     override fun onInitializeClient() {
         LOGGER.info("HerobrineHUD 客户端初始化...")
 
+        // 加载持久化配置
+        HudConfig.load()
+
         // ──────────── 注册 S2C 接收器 ────────────
 
         // 全量同步
