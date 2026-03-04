@@ -2,6 +2,7 @@ package com.RCUTANF.herobrinehud.team
 
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
@@ -74,6 +75,15 @@ object PlayerDataCallback {
         }
     }
 
+    // ──────────────── 物品冷却 ────────────────
+
+    /** 玩家物品冷却变化时触发（添加/移除冷却） */
+    val COOLDOWN_CHANGED: Event<CooldownChanged> = EventFactory.createArrayBacked(CooldownChanged::class.java) { listeners ->
+        CooldownChanged { player, group, duration ->
+            listeners.forEach { it.onCooldownChanged(player, group, duration) }
+        }
+    }
+
     // ──────────────── 加入/离开服务器 ────────────────
 
     /** 玩家加入服务器时触发 */
@@ -118,6 +128,15 @@ object PlayerDataCallback {
 
     fun interface EquipmentChanged {
         fun onEquipmentChanged(player: ServerPlayer, slot: EquipmentSlot, stack: ItemStack)
+    }
+
+    fun interface CooldownChanged {
+        /**
+         * @param player 玩家
+         * @param group 冷却组标识符
+         * @param duration 冷却时长（tick），为 0 表示冷却已结束
+         */
+        fun onCooldownChanged(player: ServerPlayer, group: Identifier, duration: Int)
     }
 
     fun interface PlayerJoinedServer {

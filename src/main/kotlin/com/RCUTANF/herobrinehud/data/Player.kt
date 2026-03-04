@@ -45,7 +45,9 @@ data class Equipment(
     var leggings: String? = null,                      // 护腿类型
     var boots: String? = null,                         // 鞋子类型
     var mainHand: String? = null,                     // 主手物品类型
-    var offHand: String? = null                      // 副手物品类型
+    var mainHandCD: String? = null,                   //主手冷却时间
+    var offHand: String? = null,                      // 副手物品类型
+    var offHandCD: String? = null                     //副手冷却时间
 )
 
 @Serializable

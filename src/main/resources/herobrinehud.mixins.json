@@ -6,6 +6,7 @@
   "mixins": [
     "LivingEntityMixin",
     "ScoreboardMixin",
+    "ServerItemCooldownsMixin",
     "ServerPlayerGameModeMixin",
     "ServerPlayerMixin",
     "ServerScoreboardMixin"

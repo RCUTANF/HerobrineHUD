@@ -8,6 +8,7 @@ import com.RCUTANF.herobrinehud.network.TeamSyncManager
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.scores.PlayerTeam
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -209,9 +210,30 @@ object TeamManager {
                     EquipmentSlot.CHEST -> info.equipment.chestplate = itemId
                     EquipmentSlot.LEGS -> info.equipment.leggings = itemId
                     EquipmentSlot.FEET -> info.equipment.boots = itemId
-                    EquipmentSlot.MAINHAND -> info.equipment.mainHand = itemId
-                    EquipmentSlot.OFFHAND -> info.equipment.offHand = itemId
+                    EquipmentSlot.MAINHAND -> {
+                        info.equipment.mainHand = itemId
+                        info.equipment.mainHandCD = getCooldownString(player, stack)
+                    }
+                    EquipmentSlot.OFFHAND -> {
+                        info.equipment.offHand = itemId
+                        info.equipment.offHandCD = getCooldownString(player, stack)
+                    }
                     else -> {}
+                }
+            }
+        })
+
+        // 物品冷却变化
+        PlayerDataCallback.COOLDOWN_CHANGED.register(PlayerDataCallback.CooldownChanged { player, group, duration ->
+            updateAndNotify(player) { info ->
+                val cooldowns = player.cooldowns
+                val mainStack = player.getItemBySlot(EquipmentSlot.MAINHAND)
+                if (!mainStack.isEmpty && cooldowns.getCooldownGroup(mainStack) == group) {
+                    info.equipment.mainHandCD = if (duration > 0) "${duration / 20.0}s" else null
+                }
+                val offStack = player.getItemBySlot(EquipmentSlot.OFFHAND)
+                if (!offStack.isEmpty && cooldowns.getCooldownGroup(offStack) == group) {
+                    info.equipment.offHandCD = if (duration > 0) "${duration / 20.0}s" else null
                 }
             }
         })
@@ -392,13 +414,17 @@ object TeamManager {
      * 从在线玩家提取装备信息
      */
     private fun extractEquipment(player: ServerPlayer): Equipment {
+        val mainHandStack = player.getItemBySlot(EquipmentSlot.MAINHAND)
+        val offHandStack = player.getItemBySlot(EquipmentSlot.OFFHAND)
         return Equipment(
             helmet = getItemId(player, EquipmentSlot.HEAD),
             chestplate = getItemId(player, EquipmentSlot.CHEST),
             leggings = getItemId(player, EquipmentSlot.LEGS),
             boots = getItemId(player, EquipmentSlot.FEET),
             mainHand = getItemId(player, EquipmentSlot.MAINHAND),
-            offHand = getItemId(player, EquipmentSlot.OFFHAND)
+            mainHandCD = getCooldownString(player, mainHandStack),
+            offHand = getItemId(player, EquipmentSlot.OFFHAND),
+            offHandCD = getCooldownString(player, offHandStack)
         )
     }
 
@@ -408,6 +434,18 @@ object TeamManager {
     private fun getItemId(player: ServerPlayer, slot: EquipmentSlot): String? {
         val stack = player.getItemBySlot(slot)
         return if (stack.isEmpty) null else stack.item.builtInRegistryHolder().key().identifier().toString()
+    }
+
+    /**
+     * 获取物品的冷却时间字符串，无冷却或空物品返回 null
+     */
+    private fun getCooldownString(player: ServerPlayer, stack: ItemStack): String? {
+        if (stack.isEmpty) return null
+        val cooldowns = player.cooldowns
+        return if (cooldowns.isOnCooldown(stack)) {
+            val remaining = cooldowns.getCooldownPercent(stack, 0f)
+            "${String.format("%.1f", remaining * 100)}%"
+        } else null
     }
 
     // ──────────────── 查询接口 ────────────────
