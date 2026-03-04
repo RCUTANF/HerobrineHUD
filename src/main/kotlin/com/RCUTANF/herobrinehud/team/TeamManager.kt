@@ -5,6 +5,7 @@ import com.RCUTANF.herobrinehud.data.PlayerEffect
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.network.TeamSyncManager
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.EquipmentSlot
@@ -204,7 +205,7 @@ object TeamManager {
         PlayerDataCallback.EQUIPMENT_CHANGED.register(PlayerDataCallback.EquipmentChanged { player, slot, stack ->
             updateAndNotify(player) { info ->
                 info.armor = player.armorValue
-                val itemId = if (stack.isEmpty) null else stack.item.builtInRegistryHolder().key().identifier().toString()
+                val itemId = if (stack.isEmpty) null else BuiltInRegistries.ITEM.getKey(stack.item).toString()
                 when (slot) {
                     EquipmentSlot.HEAD -> info.equipment.helmet = itemId
                     EquipmentSlot.CHEST -> info.equipment.chestplate = itemId
@@ -433,7 +434,7 @@ object TeamManager {
      */
     private fun getItemId(player: ServerPlayer, slot: EquipmentSlot): String? {
         val stack = player.getItemBySlot(slot)
-        return if (stack.isEmpty) null else stack.item.builtInRegistryHolder().key().identifier().toString()
+        return if (stack.isEmpty) null else BuiltInRegistries.ITEM.getKey(stack.item).toString()
     }
 
     /**
