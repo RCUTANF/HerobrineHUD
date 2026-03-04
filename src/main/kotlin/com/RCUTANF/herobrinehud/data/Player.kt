@@ -15,6 +15,7 @@ data class PlayerInfo(
     val avatar: String? = null,                        // 头像URL
 
     // 游戏状态
+    var gamemode: String,                              // 游戏模式（生存、创造、冒险等）
     var health: Double = 20.0,                         // 当前生命值
     var maxHealth: Double = 20.0,                      // 最大生命值
     var armor: Int = 0,                                // 护甲值
