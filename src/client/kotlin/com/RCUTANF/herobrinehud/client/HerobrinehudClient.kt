@@ -7,6 +7,7 @@ import com.RCUTANF.herobrinehud.network.SubscribePayload
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import org.slf4j.LoggerFactory
 
 class HerobrinehudClient : ClientModInitializer {
@@ -20,6 +21,12 @@ class HerobrinehudClient : ClientModInitializer {
 
         // 加载持久化配置
         HudConfig.load()
+
+        // ──────────── 注册 HUD 渲染 ────────────
+        HudRenderCallback.EVENT.register(HudRenderer)
+
+        // ──────────── 注册快捷键 ────────────
+        ModKeybindings.register()
 
         // ──────────── 注册 S2C 接收器 ────────────
 
