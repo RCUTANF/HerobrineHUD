@@ -3,6 +3,7 @@ package com.RCUTANF.herobrinehud.team
 import com.RCUTANF.herobrinehud.data.PlayerEffect
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
+import com.RCUTANF.herobrinehud.network.TeamSyncManager
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
@@ -74,12 +75,14 @@ object TeamManager {
             val teamInfo = convertTeam(team, srv)
             teams[team.name] = teamInfo
             LOGGER.info("队伍已创建: {} (颜色: {})", team.name, teamInfo.color)
+            TeamSyncManager.notifyTeamAdded(teamInfo)
         })
 
         TeamSyncCallback.TEAM_REMOVED.register(TeamSyncCallback.TeamRemoved { team ->
             val removed = teams.remove(team.name)
             if (removed != null) {
                 LOGGER.info("队伍已移除: {}", team.name)
+                TeamSyncManager.notifyTeamRemoved(team.name)
             }
         })
 
@@ -90,10 +93,12 @@ object TeamManager {
                 val updated = convertTeam(team, srv)
                 teams[team.name] = updated
                 LOGGER.info("队伍已修改: {} (新颜色: {})", team.name, updated.color)
+                TeamSyncManager.notifyTeamModified(updated)
             } else {
                 val teamInfo = convertTeam(team, srv)
                 teams[team.name] = teamInfo
                 LOGGER.warn("修改了不存在的队伍，已重新创建: {}", team.name)
+                TeamSyncManager.notifyTeamAdded(teamInfo)
             }
         })
 
@@ -105,6 +110,7 @@ object TeamManager {
                     val playerInfo = resolvePlayerInfo(playerName, srv)
                     teamInfo.players.add(playerInfo)
                     LOGGER.info("玩家 {} 加入队伍 {}", playerName, team.name)
+                    TeamSyncManager.notifyPlayerJoinedTeam(team.name, playerInfo)
                 }
             } else {
                 LOGGER.warn("玩家 {} 加入了不存在的队伍 {}", playerName, team.name)
@@ -116,6 +122,7 @@ object TeamManager {
             if (teamInfo != null) {
                 teamInfo.players.removeIf { it.name == playerName }
                 LOGGER.info("玩家 {} 离开队伍 {}", playerName, team.name)
+                TeamSyncManager.notifyPlayerLeftTeam(team.name, playerName)
             }
         })
     }
@@ -130,7 +137,7 @@ object TeamManager {
 
         // 血量变化
         PlayerDataCallback.HEALTH_CHANGED.register(PlayerDataCallback.HealthChanged { player ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.health = player.health.toDouble()
                 info.maxHealth = player.maxHealth.toDouble()
             }
@@ -138,7 +145,7 @@ object TeamManager {
 
         // 游戏模式变化
         PlayerDataCallback.GAMEMODE_CHANGED.register(PlayerDataCallback.GamemodeChanged { player, _, newMode ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.gamemode = newMode.getName()
             }
             LOGGER.debug("玩家 {} 游戏模式变更为 {}", player.gameProfile.name, newMode.getName())
@@ -146,7 +153,7 @@ object TeamManager {
 
         // 维度变化
         PlayerDataCallback.DIMENSION_CHANGED.register(PlayerDataCallback.DimensionChanged { player ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.dimension = player.level().dimension().toString()
             }
             LOGGER.debug("玩家 {} 维度变更为 {}", player.gameProfile.name, player.level().dimension())
@@ -154,7 +161,7 @@ object TeamManager {
 
         // 玩家死亡
         PlayerDataCallback.PLAYER_DIED.register(PlayerDataCallback.PlayerDied { player ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.isAlive = false
                 info.health = 0.0
             }
@@ -164,13 +171,16 @@ object TeamManager {
         // 玩家重生
         PlayerDataCallback.PLAYER_RESPAWNED.register(PlayerDataCallback.PlayerRespawned { player ->
             // 重生时做全量刷新，因为重生会创建新的 ServerPlayer 实例
-            refreshSinglePlayer(player)
+            val result = refreshSinglePlayer(player)
+            if (result != null) {
+                TeamSyncManager.notifyPlayerDataUpdated(result.first, result.second)
+            }
             LOGGER.debug("玩家 {} 已重生", player.gameProfile.name)
         })
 
         // 药水效果变化
         PlayerDataCallback.EFFECT_CHANGED.register(PlayerDataCallback.EffectChanged { player ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.effects.clear()
                 for (effectInstance in player.activeEffects) {
                     info.effects.add(
@@ -189,7 +199,7 @@ object TeamManager {
 
         // 装备变化（同时更新护甲值）
         PlayerDataCallback.EQUIPMENT_CHANGED.register(PlayerDataCallback.EquipmentChanged { player ->
-            updatePlayerField(player) { info ->
+            updateAndNotify(player) { info ->
                 info.armor = player.armorValue
                 // TODO: 如果需要详细装备信息，可在此处更新 info.equipment
             }
@@ -197,7 +207,10 @@ object TeamManager {
 
         // 玩家加入服务器 — 全量刷新该玩家在队伍中的数据
         PlayerDataCallback.PLAYER_JOINED_SERVER.register(PlayerDataCallback.PlayerJoinedServer { player ->
-            refreshSinglePlayer(player)
+            val result = refreshSinglePlayer(player)
+            if (result != null) {
+                TeamSyncManager.notifyPlayerJoinedServer(result.first, result.second)
+            }
             LOGGER.info("玩家 {} 加入服务器，已刷新队伍数据", player.gameProfile.name)
         })
 
@@ -212,6 +225,7 @@ object TeamManager {
                 info.dimension = null
                 info.effects.clear()
             }
+            TeamSyncManager.notifyPlayerLeftServer(playerName)
             LOGGER.info("玩家 {} 离开服务器，已标记为离线", playerName)
         })
     }
@@ -219,17 +233,24 @@ object TeamManager {
     // ──────────────── 细粒度更新工具方法 ────────────────
 
     /**
-     * 根据 ServerPlayer 定位其在队伍中的 PlayerInfo 并执行更新操作
+     * 更新玩家字段并通知订阅者
      * @param player 在线玩家
      * @param updater 对 PlayerInfo 执行的更新操作
      */
-    private inline fun updatePlayerField(player: ServerPlayer, updater: (PlayerInfo) -> Unit) {
+    private inline fun updateAndNotify(player: ServerPlayer, updater: (PlayerInfo) -> Unit) {
         val playerName = player.gameProfile.name
-        updatePlayerFieldByName(playerName, updater)
+        for (teamInfo in teams.values) {
+            val playerInfo = teamInfo.players.find { it.name == playerName }
+            if (playerInfo != null) {
+                updater(playerInfo)
+                TeamSyncManager.notifyPlayerDataUpdated(teamInfo.name, playerInfo)
+                return
+            }
+        }
     }
 
     /**
-     * 根据玩家名定位其在队伍中的 PlayerInfo 并执行更新操作
+     * 根据玩家名定位其在队伍中的 PlayerInfo 并执行更新操作（不推送通知）
      * @param playerName 玩家名
      * @param updater 对 PlayerInfo 执行的更新操作
      */
@@ -245,16 +266,19 @@ object TeamManager {
 
     /**
      * 全量刷新单个玩家的数据（用于加入服务器、重生等场景）
+     * @return Pair(teamName, updatedPlayerInfo) 如果玩家在某个队伍中；否则 null
      */
-    private fun refreshSinglePlayer(player: ServerPlayer) {
+    private fun refreshSinglePlayer(player: ServerPlayer): Pair<String, PlayerInfo>? {
         val playerName = player.gameProfile.name
         for (teamInfo in teams.values) {
             val idx = teamInfo.players.indexOfFirst { it.name == playerName }
             if (idx >= 0) {
-                teamInfo.players[idx] = createPlayerInfoFromOnline(player)
-                return
+                val newInfo = createPlayerInfoFromOnline(player)
+                teamInfo.players[idx] = newInfo
+                return teamInfo.name to newInfo
             }
         }
+        return null
     }
 
     // ──────────────── 数据转换 ────────────────
