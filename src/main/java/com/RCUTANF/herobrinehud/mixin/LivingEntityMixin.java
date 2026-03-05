@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Map;
+
 /**
  * Mixin into LivingEntity to intercept health, effect, and equipment changes.
  * All callbacks guard with instanceof ServerPlayer to only fire for server-side players.
@@ -78,14 +80,40 @@ public abstract class LivingEntityMixin {
     // ──────────────── 装备变化 ────────────────
 
     /**
-     * 当装备槽位发生变化时触发（包括武器、护甲、副手等）
+     * 注入 handleEquipmentChanges —— 处理主副手物品变化。
+     * 该方法接收一个 Map，包含本 tick 内发生变化的装备槽位及其新物品。
+     * 仅当 Map 中包含 MAINHAND 或 OFFHAND 时才触发回调。
      */
-    @Inject(method = "setItemSlot", at = @At("RETURN"))
-    private void onSetItemSlot(EquipmentSlot slot, ItemStack stack, CallbackInfo ci) {
+    @Inject(method = "handleEquipmentChanges", at = @At("HEAD"))
+    private void onHandEquipmentChanged(Map<EquipmentSlot, ItemStack> equipments, CallbackInfo ci) {
         //noinspection ConstantValue
         if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
-            PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker().onEquipmentChanged(serverPlayer, slot, stack);
+            if (equipments.containsKey(EquipmentSlot.MAINHAND)) {
+                ItemStack mainHand = equipments.get(EquipmentSlot.MAINHAND);
+                PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker()
+                        .onEquipmentChanged(serverPlayer, EquipmentSlot.MAINHAND, mainHand);
+            }
+            if (equipments.containsKey(EquipmentSlot.OFFHAND)) {
+                ItemStack offHand = equipments.get(EquipmentSlot.OFFHAND);
+                PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker()
+                        .onEquipmentChanged(serverPlayer, EquipmentSlot.OFFHAND, offHand);
+            }
+        }
+    }
+
+    /**
+     * 注入 onEquipItem —— 装备真正发生变化时的权威回调（已过滤客户端、旁观者、相同物品）。
+     * 用于处理除主副手以外的装备槽位变化（头盔、胸甲、护腿、靴子、身体护甲等）。
+     */
+    @Inject(method = "onEquipItem", at = @At("HEAD"))
+    private void onEquipItemChanged(EquipmentSlot slot, ItemStack oldItem, ItemStack newItem, CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
+            if (!serverPlayer.level().isClientSide() && !ItemStack.isSameItemSameComponents(oldItem, newItem)) {
+                // 主副手已由 handleEquipmentChanges 处理，此处跳过避免重复触发
+                if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) {
+                    PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker().onEquipmentChanged(serverPlayer, slot, newItem);
+                }
+            }
         }
     }
 }
-
