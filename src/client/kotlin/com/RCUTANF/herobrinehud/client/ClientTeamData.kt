@@ -1,5 +1,6 @@
 package com.RCUTANF.herobrinehud.client
 
+import com.RCUTANF.herobrinehud.data.Equipment
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.network.*
 import kotlinx.serialization.json.Json
@@ -120,6 +121,7 @@ object ClientTeamData {
                             player.armor = 0
                             player.dimension = null
                             player.effects.clear()
+                            player.equipment = Equipment()
                             LOGGER.debug("玩家 {} 已标记离线", data.playerName)
                             break
                         }
