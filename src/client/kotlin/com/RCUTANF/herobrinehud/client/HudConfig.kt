@@ -114,6 +114,12 @@ data class ConfigData(
     var showHealthNumber: Boolean = true,
     /** 是否显示护甲值 */
     var showArmor: Boolean = true,
+    /** 是否显示所在维度徽章 */
+    var showDimension: Boolean = true,
+    /** 是否显示玩家头像 */
+    var showAvatar: Boolean = true,
+    /** 卡片缩放系数 (0.5~2.0) */
+    var cardScale: Float = 1.0f,
 
     /** 隐藏的玩家 UUID 列表 */
     val hiddenPlayers: MutableSet<String> = mutableSetOf()

@@ -97,7 +97,42 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
             rebuildWidgets()
         }.bounds(centerX + 40, y, 60, 20).build())
 
-        y += 30
+        y += 26
+
+        // ══════════ 显示设置开关 ══════════
+        val cfg = HudConfig.data
+
+        fun toggleLabel(label: String, on: Boolean) = if (on) "[$label:on]" else "[$label:off]"
+
+        // 第一排：头像 / 血量数字 / 护甲 / 维度
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("头像", cfg.showAvatar))) { _ ->
+            HudConfig.update { showAvatar = !showAvatar }; rebuildWidgets()
+        }.bounds(centerX - 120, y, 58, 16).build())
+
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("HP数字", cfg.showHealthNumber))) { _ ->
+            HudConfig.update { showHealthNumber = !showHealthNumber }; rebuildWidgets()
+        }.bounds(centerX - 58, y, 58, 16).build())
+
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("护甲", cfg.showArmor))) { _ ->
+            HudConfig.update { showArmor = !showArmor }; rebuildWidgets()
+        }.bounds(centerX + 4, y, 54, 16).build())
+
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("维度", cfg.showDimension))) { _ ->
+            HudConfig.update { showDimension = !showDimension }; rebuildWidgets()
+        }.bounds(centerX + 62, y, 54, 16).build())
+
+        y += 20
+
+        // 第二排：装备 / 效果
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("装备", cfg.showEquipment))) { _ ->
+            HudConfig.update { showEquipment = !showEquipment }; rebuildWidgets()
+        }.bounds(centerX - 120, y, 58, 16).build())
+
+        addRenderableWidget(Button.builder(Component.literal(toggleLabel("效果", cfg.showEffects))) { _ ->
+            HudConfig.update { showEffects = !showEffects }; rebuildWidgets()
+        }.bounds(centerX - 58, y, 58, 16).build())
+
+        y += 24
 
         // ══════════ 可用队伍列表 ══════════
         val availableTeams = HudSelectionState.getAvailableTeams()
@@ -156,7 +191,8 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
         }
 
         // 可用队伍区标签
-        var slotsEndY = 50 + slots.size * 24 + 6 + 30 + 4
+        // 布局：槽位行 + 功能按钮行(26) + 设置行一(20) + 设置行二(24) + 留空(4)
+        var slotsEndY = 50 + slots.size * 24 + 6 + 26 + 20 + 24 + 4
         // 计算玩家行占用的高度
         for (slot in slots) {
             val team = ClientTeamData.getTeam(slot.teamName)

@@ -53,6 +53,7 @@ class HerobrinehudClient : ClientModInitializer {
         // 断开连接时清空客户端缓存
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             ClientTeamData.clear()
+            AvatarTextureCache.clear()
         }
 
         LOGGER.info("HerobrineHUD 客户端初始化完成！")
