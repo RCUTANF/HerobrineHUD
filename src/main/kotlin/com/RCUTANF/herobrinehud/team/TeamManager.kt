@@ -1,5 +1,6 @@
 package com.RCUTANF.herobrinehud.team
 
+import com.RCUTANF.herobrinehud.data.AvatarResolver
 import com.RCUTANF.herobrinehud.data.Equipment
 import com.RCUTANF.herobrinehud.data.PlayerEffect
 import com.RCUTANF.herobrinehud.data.PlayerInfo
@@ -372,6 +373,7 @@ object TeamManager {
             uuid = player.uuid.toString(),
             name = player.gameProfile.name,
             displayName = player.displayName?.string ?: player.gameProfile.name,
+            avatar = AvatarResolver.resolve(player.gameProfile),
             gamemode = player.gameMode.gameModeForPlayer.getName(),
             health = player.health.toDouble(),
             maxHealth = player.maxHealth.toDouble(),
@@ -391,6 +393,7 @@ object TeamManager {
             uuid = "",
             name = playerName,
             displayName = playerName,
+            avatar = AvatarResolver.resolveOffline(playerName),
             gamemode = "unknown",
             health = 0.0,
             maxHealth = 20.0,
