@@ -58,7 +58,29 @@ object CardLayout {
     /** 将 alpha 组合为深色背景 ARGB（用于槽位） */
     fun slotBgColor(opacity: Int): Int = ((opacity * 2 / 3) shl 24) or 0x161b22
 
-    // ── 维度颜色映射 ──────────────────────────────────────────
+    // ── 维度图标尺寸 ──────────────────────────────────────────
+    const val DIM_BADGE_ICON_SIZE = 10    // 维度图标渲染大小（像素，与护甲槽位一致）
+
+    // ── 维度图标枚举 ──────────────────────────────────────────
+    /**
+     * 将维度 ID 映射到原版方块物品 ID，用于渲染图标徽章
+     *  - 主世界 → 草方块 (grass_block)
+     *  - 地狱   → 地狱岩 (netherrack)
+     *  - 末地   → 末地岩 (end_stone)
+     */
+    enum class DimensionIcon(val dimensionId: String, val blockItemId: String) {
+        OVERWORLD("minecraft:overworld",  "minecraft:grass_block"),
+        NETHER   ("minecraft:the_nether", "minecraft:netherrack"),
+        THE_END  ("minecraft:the_end",    "minecraft:end_stone");
+
+        companion object {
+            /** 根据维度 ID 查找对应枚举项，找不到返回 null */
+            fun fromDimensionId(id: String): DimensionIcon? =
+                entries.firstOrNull { it.dimensionId == id }
+        }
+    }
+
+    // ── 维度颜色映射（保留，可供其他地方使用） ────────────────────
     val DIMENSION_COLORS = mapOf(
         "minecraft:overworld" to 0x55FF55,  // 绿
         "minecraft:the_nether" to 0xFF5555, // 红

@@ -159,7 +159,7 @@ object TeamManager {
         // 维度变化
         PlayerDataCallback.DIMENSION_CHANGED.register(PlayerDataCallback.DimensionChanged { player ->
             updateAndNotify(player) { info ->
-                info.dimension = player.level().dimension().toString()
+                info.dimension = player.level().dimension().identifier().toString()
             }
             LOGGER.debug("玩家 {} 维度变更为 {}", player.gameProfile.name, player.level().dimension())
         })
@@ -379,7 +379,7 @@ object TeamManager {
             maxHealth = player.maxHealth.toDouble(),
             armor = player.armorValue,
             isAlive = player.isAlive,
-            dimension = player.level().dimension().toString(),
+            dimension = player.level().dimension().identifier().toString(),
             equipment = extractEquipment(player),
             effects = effects
         )

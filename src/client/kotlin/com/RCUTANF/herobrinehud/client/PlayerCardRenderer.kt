@@ -188,14 +188,16 @@ object PlayerCardRenderer {
 
     private fun renderDimensionBadge(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
         val dim = player.dimension ?: return
-        val font = Minecraft.getInstance().font
-        val name = CardLayout.DIMENSION_NAMES[dim] ?: dim.substringAfterLast(':').take(5)
-        val rgb = CardLayout.DIMENSION_COLORS[dim] ?: 0xAAAAAA
-        val color = (opacity shl 24) or rgb
 
-        val textWidth = font.width(name)
-        val badgeX = cardX + L.CARD_WIDTH - textWidth - L.DIM_BADGE_X_FROM_RIGHT - 2
-        ctx.drawString(font, name, badgeX, y, color, true)
+        // 通过枚举查找对应方块物品 ID；未知维度则跳过渲染
+        val dimIcon = CardLayout.DimensionIcon.fromDimensionId(dim) ?: return
+
+        val iconSize = L.DIM_BADGE_ICON_SIZE
+        val iconX = cardX + L.CARD_WIDTH - iconSize - L.DIM_BADGE_X_FROM_RIGHT
+        // 垂直居中对齐到血量条（ROW1_Y 区域高度约为 HEALTH_BAR_HEIGHT，取中间）
+        val iconY = y + (L.HEALTH_BAR_HEIGHT - iconSize) / 2
+
+        renderSmallItemSlot(ctx, dimIcon.blockItemId, iconX, iconY, iconSize, opacity)
     }
 
     // ──────────────────────────────────────────────────────────────
