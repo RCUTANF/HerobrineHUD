@@ -145,6 +145,7 @@ object PlayerCardRenderer {
     private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val nameColor = if (player.isAlive) (opacity shl 24) or 0xFFFFFF else (opacity shl 24) or 0x888888
+        val scale = 0.5f
         val displayName = if (font.width(player.name) > L.NAME_MAX_WIDTH) {
             // 截断并加省略号
             var truncated = player.name
@@ -155,7 +156,13 @@ object PlayerCardRenderer {
         } else {
             player.name
         }
-        ctx.drawString(font, displayName, x, y, nameColor, false)
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        ctx.drawString(font, displayName, 0, 0, nameColor, false)
+        pose.popMatrix()
+
     }
 
     // ──────────────────────────────────────────────────────────────

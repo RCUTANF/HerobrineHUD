@@ -11,29 +11,29 @@ package com.RCUTANF.herobrinehud.client
 object CardLayout {
 
     // ── 卡片整体 ──────────────────────────────────────────────
-    const val CARD_WIDTH = 200
-    const val CARD_HEIGHT = 52
+    const val CARD_WIDTH = 105
+    const val CARD_HEIGHT = 45
     const val CARD_GAP = 3            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
 
     // ── 左侧头像区 ────────────────────────────────────────────
-    const val AVATAR_SECTION_WIDTH = 44
+    const val AVATAR_SECTION_WIDTH = 20
     const val AVATAR_SIZE = 16        // 头像渲染大小（像素）
     const val AVATAR_X_OFFSET = 4    // 头像在头像区内的 X 偏移
     const val AVATAR_Y_OFFSET = 4    // 头像在卡片内的 Y 偏移
     const val NAME_Y_OFFSET = 22     // 名称文字在卡片内的 Y 偏移（头像下方）
-    const val NAME_MAX_WIDTH = 38    // 名称最大宽度（超出截断）
+    const val NAME_MAX_WIDTH = 50    // 名称最大宽度（超出截断）
 
     // ── 右侧信息区 ────────────────────────────────────────────
     const val INFO_X = AVATAR_SECTION_WIDTH + 3   // 信息区起始 X
 
     // 第一行：血量 + 维度 (y + ROW1_Y)
     const val ROW1_Y = 4
-    const val HEALTH_BAR_WIDTH = 80
+    const val HEALTH_BAR_WIDTH = 60
     const val HEALTH_BAR_HEIGHT = 6
     const val HEALTH_NUMBER_Y = ROW1_Y            // 血量数字与条同行
-    const val DIM_BADGE_X_FROM_RIGHT = 2          // 维度徽章距卡片右边距
+    const val DIM_BADGE_X_FROM_RIGHT = 6          // 维度徽章距卡片右边距
 
     // 第二行：护甲值 + 盔甲槽位 (y + ROW2_Y)
     const val ROW2_Y = 16
