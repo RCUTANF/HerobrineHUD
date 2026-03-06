@@ -72,6 +72,26 @@ object HudSelectionState {
         return getAllKnownPlayers().filter { it.uuid !in assignedUuids }
     }
 
+    /**
+     * 根据 HUD 快捷键编号返回对应的 PlayerInfo
+     *
+     * 编号规则：
+     *  - 1~5 → 左侧第 1~5 个玩家（index 0~4）
+     *  - 6~9 → 右侧第 1~4 个玩家（index 0~3）
+     *  - 0   → 右侧第 5 个玩家（index 4）
+     *
+     * @param number 数字键编号 (0~9)
+     * @return 对应的 PlayerInfo，若不存在则返回 null
+     */
+    fun getPlayerByHotkeyNumber(number: Int): PlayerInfo? {
+        return when (number) {
+            in 1..5 -> getPlayersBySide(DisplaySide.LEFT).getOrNull(number - 1)
+            in 6..9 -> getPlayersBySide(DisplaySide.RIGHT).getOrNull(number - 6)
+            0       -> getPlayersBySide(DisplaySide.RIGHT).getOrNull(4)
+            else    -> null
+        }
+    }
+
     // ════════════════════════════════════════════════════════════
     //  批量快捷操作
     // ════════════════════════════════════════════════════════════

@@ -24,6 +24,7 @@ object CardLayout {
     const val AVATAR_Y_OFFSET = 2    // 头像在卡片内的 Y 偏移
     const val NAME_Y_OFFSET = 20     // 名称文字在卡片内的 Y 偏移（头像下方）
     const val TEAM_NAME_Y_OFFSET = 25 // 队伍名称在卡片内的 Y 偏移（底部）
+    const val HOTKEY_Y_OFFSET = 31   // 快捷键编号在卡片内的 Y 偏移（队伍名称下方）
     const val NAME_MAX_WIDTH = 40    // 名称最大宽度（超出截断）
 
     // ── 右侧信息区 ────────────────────────────────────────────

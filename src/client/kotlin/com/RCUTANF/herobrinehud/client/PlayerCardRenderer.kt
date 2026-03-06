@@ -33,8 +33,9 @@ object PlayerCardRenderer {
      * @param teamName  玩家所属队伍名称
      * @param teamColor 队伍颜色（HEX 格式，如 "#FF5555"）
      * @param opacity   不透明度 (0-255)
+     * @param hotkeyNumber 快捷键编号 (0-9，-1 表示不显示)
      */
-    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int) {
+    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int = -1) {
         val config = HudConfig.data
 
         // 卡片背景
@@ -48,6 +49,11 @@ object PlayerCardRenderer {
 
         // ── 队伍名称 ────────────────────────────────────────
         renderTeamName(ctx, teamName, teamColor, cardX + L.AVATAR_X_OFFSET, cardY + L.TEAM_NAME_Y_OFFSET, opacity)
+
+        // ── 快捷键编号 ──────────────────────────────────────
+        if (hotkeyNumber >= 0) {
+            renderHotkeyNumber(ctx, hotkeyNumber, cardX + L.AVATAR_X_OFFSET, cardY + L.HOTKEY_Y_OFFSET, opacity)
+        }
 
         // ── 右侧第一行：生命值条 + 维度 ──────────────────────
         val infoX = cardX + L.INFO_X
@@ -198,6 +204,26 @@ object PlayerCardRenderer {
         ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
         pose.popMatrix()
 
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  快捷键编号
+    // ──────────────────────────────────────────────────────────────
+
+    private fun renderHotkeyNumber(ctx: GuiGraphics, hotkeyNumber: Int, x: Int, y: Int, opacity: Int) {
+        val font = Minecraft.getInstance().font
+        val hotkeyText = "[$hotkeyNumber]"
+        val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
+        val scale = 0.5f
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        // 将缩放后的文本中心对齐到头像中心
+        val textWidth = font.width(hotkeyText)
+        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
+        pose.popMatrix()
     }
 
     // ──────────────────────────────────────────────────────────────

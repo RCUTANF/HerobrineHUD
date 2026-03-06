@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.KeyMapping
-import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 
@@ -38,6 +37,39 @@ object ModKeybindings {
     )
 
     /**
+     * 小键盘数字键 1-9, 0 对应的快捷键绑定
+     * 编号顺序与 HUD 卡片编号一致：
+     *   1~5 → 左侧第 1~5 个玩家
+     *   6~9 → 右侧第 1~4 个玩家
+     *   0   → 右侧第 5 个玩家
+     */
+    private val NUMPAD_KEYS: Map<Int, KeyMapping> = run {
+        // 数字 1~9 对应 KP_1~KP_9，0 对应 KP_0
+        val kpKeyCodes = mapOf(
+            1 to InputConstants.KEY_NUMPAD1,
+            2 to InputConstants.KEY_NUMPAD2,
+            3 to InputConstants.KEY_NUMPAD3,
+            4 to InputConstants.KEY_NUMPAD4,
+            5 to InputConstants.KEY_NUMPAD5,
+            6 to InputConstants.KEY_NUMPAD6,
+            7 to InputConstants.KEY_NUMPAD7,
+            8 to InputConstants.KEY_NUMPAD8,
+            9 to InputConstants.KEY_NUMPAD9,
+            0 to InputConstants.KEY_NUMPAD0,
+        )
+        kpKeyCodes.mapValues { (number, keyCode) ->
+            KeyBindingHelper.registerKeyBinding(
+                KeyMapping(
+                    "key.herobrinehud.player_$number",
+                    InputConstants.Type.KEYSYM,
+                    keyCode,
+                    CATEGORY
+                )
+            )
+        }
+    }
+
+    /**
      * 注册 Tick 事件监听器以轮询按键状态
      */
     fun register() {
@@ -50,7 +82,16 @@ object ModKeybindings {
             while (OPEN_SELECTION.consumeClick()) {
                 client.setScreen(TeamSelectionScreen(null))
             }
+
+            // 轮询小键盘数字键
+            for ((number, binding) in NUMPAD_KEYS) {
+                while (binding.consumeClick()) {
+                    val player = HudSelectionState.getPlayerByHotkeyNumber(number)
+                    if (player != null) {
+                        LOGGER.info("快捷键 [{}] 触发 → 请求旁观玩家: {}", number, player.name)
+                    }
+                }
+            }
         }
     }
 }
-
