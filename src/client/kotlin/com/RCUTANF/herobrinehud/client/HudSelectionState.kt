@@ -5,308 +5,171 @@ import com.RCUTANF.herobrinehud.data.TeamInfo
 import org.slf4j.LoggerFactory
 
 /**
- * HUD 选择状态管理器
+ * HUD 选择状态管理器（玩家级分配）
  *
- * 管理当前导播界面选中的展示队伍，以及要隐藏的玩家。
- * 支持任意数量的队伍同时展示在屏幕上（通过槽位机制）。
- * 提供给 HUD 渲染层使用的过滤数据接口。
+ * 每个玩家可独立分配到屏幕左侧（LEFT）、右侧（RIGHT）或不上屏（NONE）。
+ * 分配信息持久化到 HudConfig.data.playerPlacements。
  */
 object HudSelectionState {
 
     private val LOGGER = LoggerFactory.getLogger("HerobrineHUD/Selection")
 
     // ════════════════════════════════════════════════════════════
-    //  多队伍槽位管理（核心 API）
+    //  玩家分配核心 API
     // ════════════════════════════════════════════════════════════
 
     /**
-     * 添加一个队伍展示槽位
-     * @param teamName 队伍名称
-     * @param side     展示侧（LEFT / RIGHT）
-     * @return 分配的槽位索引
+     * 设置指定玩家的上屏侧
+     * @param uuid  玩家 UUID
+     * @param side  LEFT / RIGHT / NONE
      */
-    fun addDisplaySlot(teamName: String, side: DisplaySide = DisplaySide.LEFT): Int {
+    fun setPlayerSide(uuid: String, side: DisplaySide) {
         HudConfig.update {
-            // 避免重复添加同一支队伍
-            displaySlots.removeAll { it.teamName == teamName }
-            val newIndex = displaySlots.size
-            displaySlots.add(DisplaySlot(index = newIndex, teamName = teamName, side = side))
-        }
-        val resultIndex = HudConfig.data.displaySlots.size - 1
-        LOGGER.info("添加展示槽位: {} (side={}, index={})", teamName, side, resultIndex)
-        return resultIndex
-    }
-
-    /**
-     * 移除一个队伍展示槽位（按队伍名称）
-     */
-    fun removeDisplaySlot(teamName: String) {
-        HudConfig.update {
-            displaySlots.removeAll { it.teamName == teamName }
-            reindexSlots()
-        }
-        LOGGER.info("移除展示槽位: {}", teamName)
-    }
-
-    /**
-     * 移除一个队伍展示槽位（按索引）
-     */
-    fun removeDisplaySlotAt(index: Int) {
-        HudConfig.update {
-            if (index in displaySlots.indices) {
-                val removed = displaySlots.removeAt(index)
-                reindexSlots()
-                LOGGER.info("移除展示槽位[{}]: {}", index, removed.teamName)
+            if (side == DisplaySide.NONE) {
+                playerPlacements.remove(uuid)
+            } else {
+                playerPlacements[uuid] = PlayerPlacement(uuid = uuid, side = side)
             }
         }
+        LOGGER.debug("玩家 {} 分配至 {}", uuid, side)
     }
 
     /**
-     * 修改某个槽位的展示侧
+     * 获取指定玩家的当前侧位
      */
-    fun setSlotSide(index: Int, side: DisplaySide) {
-        HudConfig.update {
-            if (index in displaySlots.indices) {
-                displaySlots[index] = displaySlots[index].copy(side = side)
-            }
-        }
+    fun getPlayerSide(uuid: String): DisplaySide {
+        return HudConfig.data.playerPlacements[uuid]?.side ?: DisplaySide.NONE
     }
 
     /**
-     * 修改某个槽位绑定的队伍
-     */
-    fun setSlotTeam(index: Int, teamName: String) {
-        HudConfig.update {
-            if (index in displaySlots.indices) {
-                displaySlots[index] = displaySlots[index].copy(teamName = teamName)
-            }
-        }
-    }
-
-    /**
-     * 获取当前所有展示槽位（不可变拷贝）
-     */
-    fun getDisplaySlots(): List<DisplaySlot> = HudConfig.data.displaySlots.toList()
-
-    /**
-     * 获取指定侧的所有展示槽位
-     */
-    fun getSlotsBySide(side: DisplaySide): List<DisplaySlot> {
-        return HudConfig.data.displaySlots.filter { it.side == side }
-    }
-
-    /**
-     * 获取展示槽位总数
-     */
-    fun getDisplaySlotCount(): Int = HudConfig.data.displaySlots.size
-
-    // ════════════════════════════════════════════════════════════
-    //  队伍数据获取（多队伍）
-    // ════════════════════════════════════════════════════════════
-
-    /**
-     * 获取指定侧所有队伍的完整数据
-     */
-    fun getTeamsBySide(side: DisplaySide): List<TeamInfo> {
-        return getSlotsBySide(side).mapNotNull { slot ->
-            ClientTeamData.getTeam(slot.teamName)
-        }
-    }
-
-    /**
-     * 获取指定侧所有队伍中需要显示的玩家列表
+     * 获取指定侧上屏的所有 PlayerInfo（按服务器同步数据）
      */
     fun getPlayersBySide(side: DisplaySide): List<PlayerInfo> {
-        return getTeamsBySide(side).flatMap { team ->
-            team.players.filter { it.uuid !in HudConfig.data.hiddenPlayers }
-        }
+        val uuids = HudConfig.data.playerPlacements
+            .values
+            .filter { it.side == side }
+            .map { it.uuid }
+            .toSet()
+        return ClientTeamData.getAllTeams().values
+            .flatMap { it.players }
+            .filter { it.uuid in uuids }
     }
 
     /**
-     * 获取指定槽位对应的队伍数据
+     * 获取所有已知玩家（来自所有同步队伍），无论是否上屏
      */
-    fun getTeamAtSlot(index: Int): TeamInfo? {
-        val slot = HudConfig.data.displaySlots.getOrNull(index) ?: return null
-        return ClientTeamData.getTeam(slot.teamName)
+    fun getAllKnownPlayers(): List<PlayerInfo> {
+        return ClientTeamData.getAllTeams().values.flatMap { it.players }
     }
 
     /**
-     * 获取指定槽位中需要显示的玩家列表
+     * 获取当前未分配上屏（NONE）的玩家列表
      */
-    fun getPlayersAtSlot(index: Int): List<PlayerInfo> {
-        return getTeamAtSlot(index)?.players?.filter {
-            it.uuid !in HudConfig.data.hiddenPlayers
-        } ?: emptyList()
-    }
-
-    /**
-     * 获取所有展示队伍的完整数据（按槽位顺序）
-     */
-    fun getAllDisplayTeams(): List<TeamInfo> {
-        return HudConfig.data.displaySlots.mapNotNull { slot ->
-            ClientTeamData.getTeam(slot.teamName)
-        }
+    fun getUnassignedPlayers(): List<PlayerInfo> {
+        val assignedUuids = HudConfig.data.playerPlacements
+            .values.filter { it.side != DisplaySide.NONE }
+            .map { it.uuid }.toSet()
+        return getAllKnownPlayers().filter { it.uuid !in assignedUuids }
     }
 
     // ════════════════════════════════════════════════════════════
-    //  向后兼容（左/右队伍快捷方法）
+    //  批量快捷操作
     // ════════════════════════════════════════════════════════════
 
     /**
-     * 设置左侧展示队伍（兼容旧代码）
+     * 将整个队伍的所有玩家批量分配到指定侧
+     * @param teamName 队伍名称
+     * @param side     目标侧（LEFT / RIGHT / NONE）
      */
-    fun setLeftTeam(teamName: String?) {
+    fun batchSetTeamSide(teamName: String, side: DisplaySide) {
+        val team = ClientTeamData.getTeam(teamName) ?: return
         HudConfig.update {
-            displaySlots.removeAll { it.side == DisplaySide.LEFT }
-            if (teamName != null) {
-                displaySlots.add(0, DisplaySlot(index = 0, teamName = teamName, side = DisplaySide.LEFT))
-                reindexSlots()
+            for (player in team.players) {
+                if (side == DisplaySide.NONE) {
+                    playerPlacements.remove(player.uuid)
+                } else {
+                    playerPlacements[player.uuid] = PlayerPlacement(uuid = player.uuid, side = side)
+                }
             }
         }
-        LOGGER.info("左侧队伍设置为: {}", teamName ?: "无")
+        LOGGER.info("队伍 {} 批量分配至 {}", teamName, side)
     }
 
     /**
-     * 设置右侧展示队伍（兼容旧代码）
+     * 交换左右两侧所有玩家
      */
-    fun setRightTeam(teamName: String?) {
+    fun swapSides() {
         HudConfig.update {
-            displaySlots.removeAll { it.side == DisplaySide.RIGHT }
-            if (teamName != null) {
-                displaySlots.add(DisplaySlot(index = displaySlots.size, teamName = teamName, side = DisplaySide.RIGHT))
-                reindexSlots()
+            val entries = playerPlacements.values.toList()
+            for (p in entries) {
+                val newSide = when (p.side) {
+                    DisplaySide.LEFT  -> DisplaySide.RIGHT
+                    DisplaySide.RIGHT -> DisplaySide.LEFT
+                    DisplaySide.NONE  -> DisplaySide.NONE
+                }
+                playerPlacements[p.uuid] = p.copy(side = newSide)
             }
         }
-        LOGGER.info("右侧队伍设置为: {}", teamName ?: "无")
+        LOGGER.info("左右侧玩家已交换")
     }
 
     /**
-     * 交换左右队伍
+     * 清空所有分配
      */
-    fun swapTeams() {
+    fun clearSelection() {
         HudConfig.update {
-            for (i in displaySlots.indices) {
-                val slot = displaySlots[i]
-                val newSide = if (slot.side == DisplaySide.LEFT) DisplaySide.RIGHT else DisplaySide.LEFT
-                displaySlots[i] = slot.copy(side = newSide)
-            }
+            playerPlacements.clear()
         }
-        LOGGER.info("左右队伍已交换")
+        LOGGER.info("已清空所有 HUD 分配")
     }
 
-    /**
-     * 获取左侧队伍名称
-     */
-    fun getLeftTeamName(): String? = HudConfig.data.leftTeam
+    // ════════════════════════════════════════════════════════════
+    //  HUD 可见性
+    // ════════════════════════════════════════════════════════════
 
-    /**
-     * 获取右侧队伍名称
-     */
-    fun getRightTeamName(): String? = HudConfig.data.rightTeam
-
-    /**
-     * 获取左侧队伍的完整数据（如有）
-     */
-    fun getLeftTeam(): TeamInfo? {
-        val name = HudConfig.data.leftTeam ?: return null
-        return ClientTeamData.getTeam(name)
-    }
-
-    /**
-     * 获取右侧队伍的完整数据（如有）
-     */
-    fun getRightTeam(): TeamInfo? {
-        val name = HudConfig.data.rightTeam ?: return null
-        return ClientTeamData.getTeam(name)
-    }
-
-    /**
-     * 获取左侧队伍中需要显示的玩家列表
-     */
-    fun getLeftPlayers(): List<PlayerInfo> {
-        return getLeftTeam()?.players?.filter {
-            it.uuid !in HudConfig.data.hiddenPlayers
-        } ?: emptyList()
-    }
-
-    /**
-     * 获取右侧队伍中需要显示的玩家列表
-     */
-    fun getRightPlayers(): List<PlayerInfo> {
-        return getRightTeam()?.players?.filter {
-            it.uuid !in HudConfig.data.hiddenPlayers
-        } ?: emptyList()
-    }
-
-    // ──────────── 玩家可见性 ────────────
-
-    /**
-     * 切换某玩家的可见性
-     */
-    fun togglePlayerVisibility(uuid: String) {
-        HudConfig.update {
-            if (uuid in hiddenPlayers) {
-                hiddenPlayers.remove(uuid)
-            } else {
-                hiddenPlayers.add(uuid)
-            }
-        }
-    }
-
-    /**
-     * 检查某玩家是否被隐藏
-     */
-    fun isPlayerHidden(uuid: String): Boolean {
-        return uuid in HudConfig.data.hiddenPlayers
-    }
-
-    // ──────────── HUD 可见性 ────────────
-
-    /**
-     * 切换 HUD 显示/隐藏
-     */
     fun toggleHudVisibility() {
         HudConfig.update { hudVisible = !hudVisible }
     }
 
-    /**
-     * 获取 HUD 是否可见
-     */
     fun isHudVisible(): Boolean = HudConfig.data.hudVisible
 
-    // ──────────── 工具方法 ────────────
+    // ════════════════════════════════════════════════════════════
+    //  辅助查询
+    // ════════════════════════════════════════════════════════════
 
     /**
-     * 获取可供选择的所有队伍列表
+     * 判断是否有有效的上屏配置（至少一名玩家上屏）
+     */
+    fun hasValidSelection(): Boolean {
+        return HudConfig.data.playerPlacements.values.any {
+            it.side == DisplaySide.LEFT || it.side == DisplaySide.RIGHT
+        }
+    }
+
+    /**
+     * 获取可供操作的所有队伍列表
      */
     fun getAvailableTeams(): List<TeamInfo> {
         return ClientTeamData.getAllTeams().values.toList()
     }
 
-    /**
-     * 判断是否有有效配置（至少选择了一个队伍）
-     */
-    fun hasValidSelection(): Boolean {
-        return HudConfig.data.displaySlots.isNotEmpty()
+    // ════════════════════════════════════════════════════════════
+    //  向后兼容：保留旧方法签名，防止其他地方编译失败
+    // ════════════════════════════════════════════════════════════
+
+    @Deprecated("改用 setPlayerSide", ReplaceWith("batchSetTeamSide(teamName, DisplaySide.LEFT)"))
+    fun setLeftTeam(teamName: String?) {
+        if (teamName != null) batchSetTeamSide(teamName, DisplaySide.LEFT)
     }
 
-    /**
-     * 清空所有选择
-     */
-    fun clearSelection() {
-        HudConfig.update {
-            displaySlots.clear()
-            hiddenPlayers.clear()
-        }
-        LOGGER.info("已清空所有 HUD 选择")
+    @Deprecated("改用 setPlayerSide", ReplaceWith("batchSetTeamSide(teamName, DisplaySide.RIGHT)"))
+    fun setRightTeam(teamName: String?) {
+        if (teamName != null) batchSetTeamSide(teamName, DisplaySide.RIGHT)
     }
 
-    // ──────────── 内部工具 ────────────
+    @Deprecated("改用 swapSides")
+    fun swapTeams() = swapSides()
 
-    private fun ConfigData.reindexSlots() {
-        displaySlots.forEachIndexed { i, slot ->
-            displaySlots[i] = slot.copy(index = i)
-        }
-    }
+    @Deprecated("改用 getPlayersBySide")
+    fun getTeamsBySide(side: DisplaySide): List<TeamInfo> = emptyList()
 }
-

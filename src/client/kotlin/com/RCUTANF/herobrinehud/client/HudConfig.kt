@@ -67,38 +67,49 @@ object HudConfig {
     }
 }
 
-/**
- * 展示槽位配置
- * 每个槽位对应屏幕上的一个队伍展示区域
- */
+// ──────────────────────────────────────────────────────────────
+//  展示侧枚举
+// ──────────────────────────────────────────────────────────────
+
+@Serializable
+enum class DisplaySide {
+    LEFT, RIGHT,
+    /** 玩家不上屏 */
+    NONE
+}
+
+// ──────────────────────────────────────────────────────────────
+//  玩家上屏分配（新模型：以玩家 UUID 为键，独立于队伍）
+// ──────────────────────────────────────────────────────────────
+
+@Serializable
+data class PlayerPlacement(
+    val uuid: String,
+    val side: DisplaySide = DisplaySide.NONE
+)
+
+// ──────────────────────────────────────────────────────────────
+//  旧版队伍槽位（保留用于 JSON 反序列化迁移）
+// ──────────────────────────────────────────────────────────────
+
 @Serializable
 data class DisplaySlot(
-    /** 槽位索引（0 = 最左, 1 = 次左, …） */
     val index: Int,
-    /** 绑定的队伍名称 */
     var teamName: String,
-    /** 展示侧（LEFT 或 RIGHT），用于决定渲染位置 */
     var side: DisplaySide = DisplaySide.LEFT
 )
 
-/**
- * 展示侧枚举
- */
-@Serializable
-enum class DisplaySide {
-    LEFT, RIGHT
-}
+// ──────────────────────────────────────────────────────────────
+//  持久化配置数据
+// ──────────────────────────────────────────────────────────────
 
-/**
- * 持久化配置数据
- */
 @Serializable
 data class ConfigData(
     /**
-     * 展示队伍槽位列表（支持任意数量的队伍同时展示）
-     * 取代原来的 leftTeam / rightTeam，不再局限于两个队伍
+     * 玩家上屏分配表（新主键）
+     * key = uuid, value = PlayerPlacement
      */
-    val displaySlots: MutableList<DisplaySlot> = mutableListOf(),
+    val playerPlacements: MutableMap<String, PlayerPlacement> = mutableMapOf(),
 
     /** HUD 是否可见 */
     var hudVisible: Boolean = true,
@@ -119,38 +130,5 @@ data class ConfigData(
     /** 是否显示玩家头像 */
     var showAvatar: Boolean = true,
     /** 卡片缩放系数 (0.5~2.0) */
-    var cardScale: Float = 1.0f,
-
-    /** 隐藏的玩家 UUID 列表 */
-    val hiddenPlayers: MutableSet<String> = mutableSetOf()
-) {
-    // ──────────── 向后兼容的便捷属性 ────────────
-
-    /** 左侧队伍名称（兼容旧代码，等价于第一个 LEFT 槽位） */
-    var leftTeam: String?
-        get() = displaySlots.firstOrNull { it.side == DisplaySide.LEFT }?.teamName
-        set(value) {
-            displaySlots.removeAll { it.side == DisplaySide.LEFT }
-            if (value != null) {
-                displaySlots.add(0, DisplaySlot(index = 0, teamName = value, side = DisplaySide.LEFT))
-                reindex()
-            }
-        }
-
-    /** 右侧队伍名称（兼容旧代码，等价于第一个 RIGHT 槽位） */
-    var rightTeam: String?
-        get() = displaySlots.firstOrNull { it.side == DisplaySide.RIGHT }?.teamName
-        set(value) {
-            displaySlots.removeAll { it.side == DisplaySide.RIGHT }
-            if (value != null) {
-                displaySlots.add(DisplaySlot(index = displaySlots.size, teamName = value, side = DisplaySide.RIGHT))
-                reindex()
-            }
-        }
-
-    /** 重新整理槽位索引 */
-    private fun reindex() {
-        displaySlots.forEachIndexed { i, slot -> slot.index.let { displaySlots[i] = slot.copy(index = i) } }
-    }
-}
-
+    var cardScale: Float = 1.0f
+)

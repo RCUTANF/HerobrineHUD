@@ -390,8 +390,10 @@ object TeamManager {
      * 为离线玩家创建基本的 PlayerInfo
      */
     private fun createPlayerInfoOffline(playerName: String): PlayerInfo {
+        // 使用 Minecraft 离线模式的 UUID 生成算法，确保一致性
+        val offlineUuid = java.util.UUID.nameUUIDFromBytes("OfflinePlayer:$playerName".toByteArray(Charsets.UTF_8))
         return PlayerInfo(
-            uuid = "",
+            uuid = offlineUuid.toString(),
             name = playerName,
             displayName = playerName,
             avatar = AvatarResolver.resolveOffline(playerName),
