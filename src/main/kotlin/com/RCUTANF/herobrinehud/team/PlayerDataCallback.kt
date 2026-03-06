@@ -86,10 +86,21 @@ object PlayerDataCallback {
 
     // ──────────────── 加入/离开服务器 ────────────────
 
-    /** 玩家加入服务器时触发 */
+    /** 玩家加入服务器时触发（网络连接建立，但数据可能未加载完成） */
     val PLAYER_JOINED_SERVER: Event<PlayerJoinedServer> = EventFactory.createArrayBacked(PlayerJoinedServer::class.java) { listeners ->
         PlayerJoinedServer { player ->
             listeners.forEach { it.onPlayerJoinedServer(player) }
+        }
+    }
+
+    /**
+     * 玩家数据加载完成时触发（装备、效果等数据已从存档反序列化完毕）
+     * 此事件在 ServerPlayer.readAdditionalSaveData 方法末尾触发，
+     * 比 PLAYER_JOINED_SERVER 更适合用于获取完整的玩家状态
+     */
+    val PLAYER_DATA_LOADED: Event<PlayerDataLoaded> = EventFactory.createArrayBacked(PlayerDataLoaded::class.java) { listeners ->
+        PlayerDataLoaded { player ->
+            listeners.forEach { it.onPlayerDataLoaded(player) }
         }
     }
 
@@ -141,6 +152,10 @@ object PlayerDataCallback {
 
     fun interface PlayerJoinedServer {
         fun onPlayerJoinedServer(player: ServerPlayer)
+    }
+
+    fun interface PlayerDataLoaded {
+        fun onPlayerDataLoaded(player: ServerPlayer)
     }
 
     fun interface PlayerLeftServer {

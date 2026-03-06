@@ -240,13 +240,14 @@ object TeamManager {
             }
         })
 
-        // 玩家加入服务器 — 全量刷新该玩家在队伍中的数据
-        PlayerDataCallback.PLAYER_JOINED_SERVER.register(PlayerDataCallback.PlayerJoinedServer { player ->
+        // 玩家数据加载完成 — 全量刷新该玩家在队伍中的数据
+        // 使用 PLAYER_DATA_LOADED 而非 PLAYER_JOINED_SERVER，确保装备、效果等数据已从存档反序列化完毕
+        PlayerDataCallback.PLAYER_DATA_LOADED.register(PlayerDataCallback.PlayerDataLoaded { player ->
             val result = refreshSinglePlayer(player)
             if (result != null) {
                 TeamSyncManager.notifyPlayerJoinedServer(result.first, result.second)
             }
-            LOGGER.info("玩家 {} 加入服务器，已刷新队伍数据", player.gameProfile.name)
+            LOGGER.info("玩家 {} 数据加载完成，已刷新队伍数据", player.gameProfile.name)
         })
 
         // 玩家离开服务器 — 标记为离线状态

@@ -1,8 +1,10 @@
 package com.RCUTANF.herobrinehud.mixin;
 
 import com.RCUTANF.herobrinehud.team.PlayerDataCallback;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.ValueInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,6 +15,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin {
+
+    // ──────────────── 玩家数据加载完成 ────────────────
+
+    /**
+     * 当玩家数据从存档反序列化完成后触发
+     * readAdditionalSaveData 在玩家加入服务器时从 playerdata 文件加载数据，
+     * 包含装备、效果、游戏模式等所有持久化数据，
+     * 此时机比 ServerPlayConnectionEvents.JOIN 更适合获取完整的玩家状态
+     */
+    @Inject(method = "readAdditionalSaveData", at = @At("RETURN"))
+    private void onPlayerDataLoaded(ValueInput input, CallbackInfo ci) {
+        PlayerDataCallback.INSTANCE.getPLAYER_DATA_LOADED().invoker()
+                .onPlayerDataLoaded((ServerPlayer) (Object) this);
+    }
 
     // ──────────────── 维度切换 ────────────────
 
