@@ -26,6 +26,10 @@ object HudPayloadIds {
     /** C2S：客户端请求取消订阅 */
     val UNSUBSCRIBE: CustomPacketPayload.Type<UnsubscribePayload> =
         CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Herobrinehud.MOD_ID, "unsubscribe"))
+
+    /** C2S：客户端请求旁观玩家 */
+    val SPECTATE_PLAYER: CustomPacketPayload.Type<SpectatePlayerPayload> =
+        CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Herobrinehud.MOD_ID, "spectate_player"))
 }
 
 // ══════════════════════════════════════════════════════════════

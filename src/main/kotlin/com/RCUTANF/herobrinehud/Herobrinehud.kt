@@ -74,6 +74,8 @@ class Herobrinehud : ModInitializer {
         // C2S payloads（客户端发给服务端）
         PayloadTypeRegistry.playC2S().register(HudPayloadIds.SUBSCRIBE, SubscribePayload.STREAM_CODEC)
         PayloadTypeRegistry.playC2S().register(HudPayloadIds.UNSUBSCRIBE, UnsubscribePayload.STREAM_CODEC)
+
+        PayloadTypeRegistry.playC2S().register(HudPayloadIds.SPECTATE_PLAYER, SpectatePlayerPayload.STREAM_CODEC)
     }
 
     /**
@@ -88,6 +90,32 @@ class Herobrinehud : ModInitializer {
         // 取消订阅请求
         ServerPlayNetworking.registerGlobalReceiver(HudPayloadIds.UNSUBSCRIBE) { _, context ->
             TeamSyncManager.unsubscribe(context.player())
+        }
+
+        // 旁观玩家请求
+        ServerPlayNetworking.registerGlobalReceiver(HudPayloadIds.SPECTATE_PLAYER) { payload, context ->
+            val requester = context.player()
+            val targetUuid = payload.targetPlayerUuid
+
+            // 在服务器主线程执行
+            context.server().execute {
+                val targetPlayer = context.server().playerList.getPlayer(targetUuid)
+
+                if (targetPlayer == null) {
+                    LOGGER.warn("玩家 {} 请求旁观不存在的玩家: {}", requester.name.string, targetUuid)
+                    return@execute
+                }
+
+                // 检查请求者是否处于旁观模式
+                if (!requester.isSpectator) {
+                    LOGGER.warn("玩家 {} 不在旁观模式，无法切换旁观目标", requester.name.string)
+                    return@execute
+                }
+
+                // 设置旁观目标
+                requester.setCamera(targetPlayer)
+                LOGGER.info("玩家 {} 开始旁观 {}", requester.name.string, targetPlayer.name.string)
+            }
         }
     }
 }
