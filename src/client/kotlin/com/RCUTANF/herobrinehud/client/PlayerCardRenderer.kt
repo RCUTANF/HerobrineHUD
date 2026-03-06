@@ -62,7 +62,8 @@ object PlayerCardRenderer {
         }
         if (config.showEffects) {
             val effectStartX = infoX + L.HAND_SLOT_SIZE * 2 + L.EFFECT_BADGE_GAP * 3 + 2
-            renderEffectBadges(ctx, player, effectStartX, cardY + L.ROW3_Y, opacity)
+            val effectAvailableWidth = cardX + L.CARD_WIDTH - effectStartX - 2
+            renderEffectBadges(ctx, player, effectStartX, cardY + L.ROW3_Y, effectAvailableWidth, opacity)
         }
     }
 
@@ -233,24 +234,81 @@ object PlayerCardRenderer {
     //  效果徽章
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderEffectBadges(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    private fun renderEffectBadges(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, availableWidth: Int, opacity: Int) {
         if (player.effects.isEmpty()) return
         val font = Minecraft.getInstance().font
-        var bx = x
-        val maxBadges = ((L.CARD_WIDTH - (x)) / (L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP)).coerceAtLeast(1)
-        for (effect in player.effects.take(maxBadges)) {
-            val rgb = CardLayout.EFFECT_COLORS[effect.identifier] ?: 0x7777CC
-            val bgColor = ((opacity * 3 / 4) shl 24) or rgb
-            ctx.fill(bx, y, bx + L.EFFECT_BADGE_SIZE, y + L.EFFECT_BADGE_SIZE, bgColor)
-            // 缩写首字母
-            val abbr = effect.name.take(1).uppercase()
-            ctx.drawString(
-                font, abbr,
-                bx + (L.EFFECT_BADGE_SIZE - font.width(abbr)) / 2,
-                y + (L.EFFECT_BADGE_SIZE - 8) / 2,
-                (opacity shl 24) or 0xFFFFFF, false
-            )
-            bx += L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP
+        val badgeStep = L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP + 2  // 每个徽章占用的宽度（含外框）
+        val maxBadges = (availableWidth / badgeStep).coerceAtLeast(1)
+
+        for ((index, effect) in player.effects.take(maxBadges).withIndex()) {
+            val bx = x + index * badgeStep
+
+            // 绘制外框背景（深色半透明）
+            val frameBg = ((opacity * 3 / 4) shl 24) or 0x222222
+            ctx.fill(bx - 1, y - 1, bx + L.EFFECT_BADGE_SIZE + 1, y + L.EFFECT_BADGE_SIZE + 1, frameBg)
+
+            // 获取效果图标的 Identifier
+            val iconId = getEffectIcon(effect.identifier)
+
+            // 使用 blitSprite 渲染效果图标
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            val scale = L.EFFECT_BADGE_SIZE / 18f  // 原生图标大小是 18x18
+            pose.translate(bx.toFloat(), y.toFloat())
+            pose.scale(scale, scale)
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, iconId, 0, 0, 18, 18)
+            pose.popMatrix()
+
+            // 右上角渲染罗马数字等级（amplifier >= 1 时显示，即 II 级及以上）
+            if (effect.amplifier >= 1) {
+                val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
+                // 缩小罗马数字渲染
+                pose.pushMatrix()
+                val numScale = 0.5f
+                // 计算右上角位置
+                val romanWidth = (font.width(roman) * numScale).toInt()
+                val romanX = bx + L.EFFECT_BADGE_SIZE - romanWidth
+                val romanY = y - 1
+                pose.translate(romanX.toFloat(), romanY.toFloat())
+                pose.scale(numScale, numScale)
+                ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
+                pose.popMatrix()
+            }
+        }
+    }
+
+    /**
+     * 根据效果标识符获取效果图标的 Identifier
+     * 例如 "minecraft:speed" -> Identifier("minecraft", "mob_effect/speed")
+     */
+    private fun getEffectIcon(effectKey: String): Identifier {
+        // 提取效果名称（去掉命名空间）
+        val key = if (effectKey.contains(":")) {
+            effectKey.substringAfter(":")
+        } else {
+            effectKey
+        }
+        // 原版效果图标在 GUI atlas 中的路径为 mob_effect/<effectKey>
+        return Identifier.withDefaultNamespace("mob_effect/${key.lowercase()}")
+    }
+
+    /**
+     * 将数字转换为罗马数字字符串
+     */
+    private fun toRomanNumeral(num: Int): String {
+        if (num <= 0 || num > 10) return num.toString()
+        return when (num) {
+            1 -> "I"
+            2 -> "II"
+            3 -> "III"
+            4 -> "IV"
+            5 -> "V"
+            6 -> "VI"
+            7 -> "VII"
+            8 -> "VIII"
+            9 -> "IX"
+            10 -> "X"
+            else -> num.toString()
         }
     }
 
