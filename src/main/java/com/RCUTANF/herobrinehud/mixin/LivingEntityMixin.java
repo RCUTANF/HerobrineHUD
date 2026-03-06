@@ -7,12 +7,14 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -37,43 +39,24 @@ public abstract class LivingEntityMixin {
 
     // ──────────────── 药水效果变化 ────────────────
 
-    /**
-     * 当添加药水效果时触发
-     */
-    @Inject(method = "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z",
-            at = @At("RETURN"))
-    private void onAddEffect(MobEffectInstance effectInstance, Entity source, CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValue()) {
-            //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
-                PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
-            }
+    @Inject(method = "onEffectAdded", at = @At("TAIL"))
+    private void onEffectAdded(MobEffectInstance effectInstance, @Nullable Entity entity, CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayer serverPlayer) {
+            PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
         }
     }
 
-    /**
-     * 当移除单个药水效果时触发
-     */
-    @Inject(method = "removeEffect", at = @At("RETURN"))
-    private void onRemoveEffect(CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValue()) {
-            //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
-                PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
-            }
+    @Inject(method = "onEffectUpdated", at = @At("TAIL"))
+    private void onEffectUpdated(MobEffectInstance effectInstance, boolean forced, @Nullable Entity entity, CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayer serverPlayer) {
+            PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
         }
     }
 
-    /**
-     * 当清除所有药水效果时触发
-     */
-    @Inject(method = "removeAllEffects", at = @At("RETURN"))
-    private void onRemoveAllEffects(CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValue()) {
-            //noinspection ConstantValue
-            if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
-                PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
-            }
+    @Inject(method = "onEffectsRemoved", at = @At("TAIL"))
+    private void onEffectsRemoved(Collection<MobEffectInstance> effects, CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayer serverPlayer) {
+            PlayerDataCallback.INSTANCE.getEFFECT_CHANGED().invoker().onEffectChanged(serverPlayer);
         }
     }
 
