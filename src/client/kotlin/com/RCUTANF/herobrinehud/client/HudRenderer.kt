@@ -52,7 +52,7 @@ object HudRenderer : HudRenderCallback {
     }
 
     /**
-     * 渲染单个队伍面板（标题 + 玩家卡片列表），返回面板底部 Y 坐标
+     * 渲染单个队伍的玩家卡片列表，返回列表底部 Y 坐标
      */
     private fun renderTeamPanel(
         ctx: GuiGraphics,
@@ -61,37 +61,11 @@ object HudRenderer : HudRenderCallback {
         x: Int, y: Int,
         opacity: Int
     ): Int {
-        val font = Minecraft.getInstance().font
-        val totalHeight = L.TEAM_HEADER_HEIGHT +
-                players.size * (L.CARD_HEIGHT + L.CARD_GAP) +
-                L.PANEL_PADDING * 2
-
-        // 面板背景
-        ctx.fill(x, y, x + L.CARD_WIDTH, y + totalHeight, L.bgColor(opacity))
-
-        // 队伍标题
-        val teamColor = parseColor(team.color, opacity)
-        ctx.drawString(font, team.displayName, x + L.PANEL_PADDING, y + L.PANEL_PADDING, teamColor, true)
-
-        // 玩家卡片列表
-        var cardY = y + L.PANEL_PADDING + L.TEAM_HEADER_HEIGHT
+        var cardY = y
         for (player in players) {
-            PlayerCardRenderer.renderCard(ctx, player, x, cardY, opacity)
+            PlayerCardRenderer.renderCard(ctx, player, x, cardY, team.displayName, team.color, opacity)
             cardY += L.CARD_HEIGHT + L.CARD_GAP
         }
-
-        return y + totalHeight
-    }
-
-    /**
-     * 解析 HEX 颜色字符串为 ARGB int
-     */
-    private fun parseColor(hex: String, alpha: Int): Int {
-        return try {
-            val rgb = hex.removePrefix("#").toInt(16)
-            (alpha shl 24) or rgb
-        } catch (_: Exception) {
-            (alpha shl 24) or 0xFFFFFF
-        }
+        return cardY
     }
 }

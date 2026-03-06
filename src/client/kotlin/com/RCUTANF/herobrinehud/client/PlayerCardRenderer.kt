@@ -30,9 +30,11 @@ object PlayerCardRenderer {
      * @param player    玩家数据
      * @param cardX     卡片左上角 X
      * @param cardY     卡片左上角 Y
+     * @param teamName  玩家所属队伍名称
+     * @param teamColor 队伍颜色（HEX 格式，如 "#FF5555"）
      * @param opacity   不透明度 (0-255)
      */
-    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, opacity: Int) {
+    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int) {
         val config = HudConfig.data
 
         // 卡片背景
@@ -43,6 +45,9 @@ object PlayerCardRenderer {
             renderAvatar(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
         }
         renderName(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.NAME_Y_OFFSET, opacity)
+
+        // ── 队伍名称 ────────────────────────────────────────
+        renderTeamName(ctx, teamName, teamColor, cardX + L.AVATAR_X_OFFSET, cardY + L.TEAM_NAME_Y_OFFSET, opacity)
 
         // ── 右侧第一行：生命值条 + 维度 ──────────────────────
         val infoX = cardX + L.INFO_X
@@ -158,9 +163,39 @@ object PlayerCardRenderer {
         }
         val pose = ctx.pose()
         pose.pushMatrix()
+        // 头像中心 X = x + L.AVATAR_SIZE / 2
+        // 将缩放后的文本中心对齐到头像中心
+        val textWidth = font.width(displayName)
+        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale, scale)
-        ctx.drawString(font, displayName, 0, 0, nameColor, false)
+        ctx.drawString(font, displayName, textX, 0, nameColor, false)
+        pose.popMatrix()
+
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  队伍名称
+    // ──────────────────────────────────────────────────────────────
+
+    private fun renderTeamName(ctx: GuiGraphics, teamName: String, teamColor: String, x: Int, y: Int, opacity: Int) {
+        val font = Minecraft.getInstance().font
+        val rgb = try {
+            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
+        } catch (_: Exception) {
+            0xAAAAAA
+        }
+        val teamColorInt = (opacity shl 24) or rgb
+        val scale = 0.5f
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        // 头像中心 X = x + L.AVATAR_SIZE / 2
+        // 将缩放后的文本中心对齐到头像中心
+        val textWidth = font.width(teamName)
+        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
         pose.popMatrix()
 
     }
