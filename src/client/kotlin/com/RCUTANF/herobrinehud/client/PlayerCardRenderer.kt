@@ -44,6 +44,10 @@ object PlayerCardRenderer {
         // ── 左侧：头像 + 名称 ──────────────────────────────
         if (config.showAvatar) {
             renderAvatar(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
+            // 如果当前正在旁观该玩家，在头像周围绘制黄色高亮框
+            if (isSpectatingPlayer(player)) {
+                renderSpectateHighlight(ctx, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
+            }
         }
         renderName(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.NAME_Y_OFFSET, opacity)
 
@@ -461,6 +465,40 @@ object PlayerCardRenderer {
         percent > 0.3 -> 0xFFFF55
         percent > 0.0 -> 0xFF5555
         else -> 0x555555
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  辅助：检测是否正在旁观该玩家
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 检测当前客户端是否正在以第一人称旁观该玩家
+     * 使用 SpectatorTracker 缓存的状态，避免每帧查询开销
+     */
+    private fun isSpectatingPlayer(player: PlayerInfo): Boolean {
+        return SpectatorTracker.isSpectating(player.uuid)
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  辅助：渲染旁观高亮框
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 在头像周围渲染黄色高亮框
+     */
+    private fun renderSpectateHighlight(ctx: GuiGraphics, x: Int, y: Int, opacity: Int) {
+        val highlightColor = (opacity shl 24) or 0xFFFF00  // 黄色
+        val borderWidth = 2
+        
+        // 绘制四条边框线
+        // 上边
+        ctx.fill(x - borderWidth, y - borderWidth, x + L.AVATAR_SIZE + borderWidth, y, highlightColor)
+        // 下边
+        ctx.fill(x - borderWidth, y + L.AVATAR_SIZE, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE + borderWidth, highlightColor)
+        // 左边
+        ctx.fill(x - borderWidth, y, x, y + L.AVATAR_SIZE, highlightColor)
+        // 右边
+        ctx.fill(x + L.AVATAR_SIZE, y, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE, highlightColor)
     }
 }
 
