@@ -39,7 +39,9 @@ object CardLayout {
     const val ROW2_Y = 16
     const val SLOT_SIZE = 10          // 装备槽位大小（小图标）
     const val SLOT_GAP = 2
-    const val ARMOR_VALUE_WIDTH = 18  // 护甲数字区宽度
+    const val ARMOR_ICON_SIZE = 10    // 护甲图标（铁胸甲）大小
+    const val ARMOR_ICON_GAP = 2      // 图标与数字之间的间距
+    const val ARMOR_VALUE_WIDTH = ARMOR_ICON_SIZE + ARMOR_ICON_GAP + 16  // 护甲图标 + 间距 + 数字区宽度
 
     // 第三行：主副手 + 效果徽章 (y + ROW3_Y)
     const val ROW3_Y = 30

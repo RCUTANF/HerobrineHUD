@@ -207,10 +207,14 @@ object PlayerCardRenderer {
     private fun renderArmorRow(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
 
-        // 护甲值数字
-        val armorText = "\uD83D\uDEE1${player.armor}"   // 盾牌emoji + 数字（fallback为纯数字）
-        val armorDisplay = "A:${player.armor}"
-        ctx.drawString(font, armorDisplay, x, y + 1, (opacity shl 24) or 0xAAAAAA, false)
+        // 铁胸甲图标（作为护甲值的标识符）
+        val iconY = y + (L.SLOT_SIZE - L.ARMOR_ICON_SIZE) / 2
+        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", x, iconY, L.ARMOR_ICON_SIZE, opacity)
+
+        // 护甲值数字（紧跟图标右侧，垂直居中）
+        val textX = x + L.ARMOR_ICON_SIZE + L.ARMOR_ICON_GAP
+        val textY = y + (L.SLOT_SIZE - 7) / 2  // 7 为 MC 默认字体高度
+        ctx.drawString(font, "${player.armor}", textX, textY, (opacity shl 24) or 0xAAAAAA, false)
 
         // 四个护甲槽位
         val eq = player.equipment
