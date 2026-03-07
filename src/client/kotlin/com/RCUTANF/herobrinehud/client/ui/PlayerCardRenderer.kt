@@ -2,7 +2,7 @@ package com.RCUTANF.herobrinehud.client.ui
 
 import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
 import com.RCUTANF.herobrinehud.client.HudConfig
-import com.RCUTANF.herobrinehud.client.util.SpectatorTracker
+import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
@@ -37,9 +37,8 @@ object PlayerCardRenderer {
      * @param teamName  玩家所属队伍名称
      * @param teamColor 队伍颜色（HEX 格式，如 "#FF5555"）
      * @param opacity   不透明度 (0-255)
-     * @param hotkeyNumber 快捷键编号 (0-9，-1 表示不显示)
      */
-    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int = -1) {
+    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int) {
         val config = HudConfig.data
 
         // 卡片背景
@@ -49,7 +48,7 @@ object PlayerCardRenderer {
         if (config.showAvatar) {
             renderAvatar(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
             // 如果当前正在旁观该玩家，在头像周围绘制黄色高亮框
-            if (isSpectatingPlayer(player)) {
+            if (ClientTeamData.isSpectating(player.uuid)) {
                 renderSpectateHighlight(ctx, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
             }
         }
@@ -59,6 +58,7 @@ object PlayerCardRenderer {
         renderTeamName(ctx, teamName, teamColor, cardX + L.AVATAR_X_OFFSET, cardY + L.TEAM_NAME_Y_OFFSET, opacity)
 
         // ── 快捷键编号 ──────────────────────────────────────
+        val hotkeyNumber = ClientTeamData.getPlayerHotkey(player.uuid)
         if (hotkeyNumber >= 0) {
             renderHotkeyNumber(ctx, hotkeyNumber, cardX + L.AVATAR_X_OFFSET, cardY + L.HOTKEY_Y_OFFSET, opacity)
         }
@@ -469,18 +469,6 @@ object PlayerCardRenderer {
         percent > 0.3 -> 0xFFFF55
         percent > 0.0 -> 0xFF5555
         else -> 0x555555
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    //  辅助：检测是否正在旁观该玩家
-    // ──────────────────────────────────────────────────────────────
-
-    /**
-     * 检测当前客户端是否正在以第一人称旁观该玩家
-     * 使用 SpectatorTracker 缓存的状态，避免每帧查询开销
-     */
-    private fun isSpectatingPlayer(player: PlayerInfo): Boolean {
-        return SpectatorTracker.isSpectating(player.uuid)
     }
 
     // ──────────────────────────────────────────────────────────────

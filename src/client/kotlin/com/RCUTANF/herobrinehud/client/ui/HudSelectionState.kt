@@ -36,6 +36,8 @@ object HudSelectionState {
             }
         }
         LOGGER.debug("玩家 {} 分配至 {}", uuid, side)
+        // 更新快捷键映射
+        updateHotkeyMappings()
     }
 
     /**
@@ -117,6 +119,8 @@ object HudSelectionState {
             }
         }
         LOGGER.info("队伍 {} 批量分配至 {}", teamName, side)
+        // 更新快捷键映射
+        updateHotkeyMappings()
     }
 
     /**
@@ -135,6 +139,8 @@ object HudSelectionState {
             }
         }
         LOGGER.info("左右侧玩家已交换")
+        // 更新快捷键映射
+        updateHotkeyMappings()
     }
 
     /**
@@ -145,6 +151,8 @@ object HudSelectionState {
             playerPlacements.clear()
         }
         LOGGER.info("已清空所有 HUD 分配")
+        // 清空快捷键映射
+        ClientTeamData.clearHotkeyMappings()
     }
 
     // ════════════════════════════════════════════════════════════
@@ -196,4 +204,34 @@ object HudSelectionState {
 
     @Deprecated("改用 getPlayersBySide")
     fun getTeamsBySide(side: DisplaySide): List<TeamInfo> = emptyList()
+
+    // ════════════════════════════════════════════════════════════
+    //  快捷键映射管理
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * 更新快捷键映射到 ClientTeamData
+     * 
+     * 根据当前左右侧玩家分配自动计算快捷键编号：
+     * - 左侧编号：1, 2, 3, 4, 5
+     * - 右侧编号：6, 7, 8, 9, 0
+     */
+    fun updateHotkeyMappings() {
+        val hotkeyMap = mutableMapOf<String, Int>()
+        
+        // 左侧玩家：1-5
+        val leftPlayers = getPlayersBySide(DisplaySide.LEFT)
+        leftPlayers.take(5).forEachIndexed { index, player ->
+            hotkeyMap[player.uuid] = index + 1
+        }
+        
+        // 右侧玩家：6, 7, 8, 9, 0
+        val rightPlayers = getPlayersBySide(DisplaySide.RIGHT)
+        val rightHotkeyNumbers = listOf(6, 7, 8, 9, 0)
+        rightPlayers.take(5).forEachIndexed { index, player ->
+            hotkeyMap[player.uuid] = rightHotkeyNumbers[index]
+        }
+        
+        ClientTeamData.updateHotkeyMappings(hotkeyMap)
+    }
 }

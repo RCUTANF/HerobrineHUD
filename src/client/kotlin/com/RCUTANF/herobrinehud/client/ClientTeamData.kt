@@ -1,5 +1,6 @@
 package com.RCUTANF.herobrinehud.client
 
+import com.RCUTANF.herobrinehud.client.ui.HudSelectionState
 import com.RCUTANF.herobrinehud.data.Equipment
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.network.*
@@ -29,6 +30,15 @@ object ClientTeamData {
     var isSynced: Boolean = false
         private set
 
+    // ──────────────── 客户端本地状态（不同步到服务器） ────────────────
+
+    /** 玩家 UUID -> 快捷键编号 (0-9) 的映射 */
+    private val playerHotkeyMap = ConcurrentHashMap<String, Int>()
+
+    /** 当前正在旁观的玩家 UUID */
+    @Volatile
+    private var spectatingPlayerUuid: String? = null
+
     // ──────────────── 查询接口（供 HUD 渲染使用） ────────────────
 
     fun getAllTeams(): Map<String, TeamInfo> = teams.toMap()
@@ -36,6 +46,73 @@ object ClientTeamData {
     fun getTeam(name: String): TeamInfo? = teams[name]
 
     fun getTeamCount(): Int = teams.size
+
+    // ──────────────── 快捷键管理 ────────────────
+
+    /**
+     * 设置玩家的快捷键编号
+     * @param playerUuid 玩家 UUID
+     * @param hotkeyNumber 快捷键编号 (0-9)，-1 表示清除
+     */
+    fun setPlayerHotkey(playerUuid: String, hotkeyNumber: Int) {
+        if (hotkeyNumber < 0) {
+            playerHotkeyMap.remove(playerUuid)
+        } else {
+            playerHotkeyMap[playerUuid] = hotkeyNumber
+        }
+    }
+
+    /**
+     * 获取玩家的快捷键编号
+     * @param playerUuid 玩家 UUID
+     * @return 快捷键编号 (0-9)，未设置则返回 -1
+     */
+    fun getPlayerHotkey(playerUuid: String): Int {
+        return playerHotkeyMap[playerUuid] ?: -1
+    }
+
+    /**
+     * 批量设置快捷键映射（用于 HUD 渲染前更新）
+     * @param hotkeyMap UUID -> 快捷键编号的映射
+     */
+    fun updateHotkeyMappings(hotkeyMap: Map<String, Int>) {
+        playerHotkeyMap.clear()
+        playerHotkeyMap.putAll(hotkeyMap)
+    }
+
+    /**
+     * 清空所有快捷键映射
+     */
+    fun clearHotkeyMappings() {
+        playerHotkeyMap.clear()
+    }
+
+    // ──────────────── 旁观状态管理 ────────────────
+
+    /**
+     * 设置当前正在旁观的玩家
+     * @param playerUuid 玩家 UUID，null 表示未旁观任何玩家
+     */
+    fun setSpectatingPlayer(playerUuid: String?) {
+        spectatingPlayerUuid = playerUuid
+    }
+
+    /**
+     * 获取当前正在旁观的玩家 UUID
+     * @return 玩家 UUID，未旁观则返回 null
+     */
+    fun getSpectatingPlayer(): String? {
+        return spectatingPlayerUuid
+    }
+
+    /**
+     * 检查是否正在旁观指定玩家
+     * @param playerUuid 玩家 UUID
+     * @return true 如果正在旁观该玩家
+     */
+    fun isSpectating(playerUuid: String): Boolean {
+        return spectatingPlayerUuid == playerUuid
+    }
 
     // ──────────────── 数据处理 ────────────────
 
@@ -52,6 +129,8 @@ object ClientTeamData {
         } catch (e: Exception) {
             LOGGER.error("解析全量同步数据失败: {}", e.message)
         }
+        //初始化playerHotKeyMap
+        HudSelectionState.updateHotkeyMappings()
     }
 
     /**
@@ -143,6 +222,8 @@ object ClientTeamData {
     fun clear() {
         teams.clear()
         isSynced = false
+        playerHotkeyMap.clear()
+        spectatingPlayerUuid = null
         LOGGER.info("客户端队伍数据缓存已清空")
     }
 }

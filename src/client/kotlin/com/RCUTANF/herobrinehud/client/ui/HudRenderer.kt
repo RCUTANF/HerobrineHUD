@@ -31,26 +31,21 @@ object HudRenderer : HudRenderCallback {
         // ──────────── 渲染左侧玩家 ────────────
         val leftPlayers = HudSelectionState.getPlayersBySide(DisplaySide.LEFT)
         var leftY = L.MARGIN
-        for ((index, player) in leftPlayers.withIndex()) {
+        for (player in leftPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
-            // 左侧编号：1, 2, 3, 4, 5
-            val hotkeyNumber = if (index < 5) index + 1 else -1
-            PlayerCardRenderer.renderCard(drawContext, player, L.MARGIN, leftY, teamName, teamColor, opacity, hotkeyNumber)
+            PlayerCardRenderer.renderCard(drawContext, player, L.MARGIN, leftY, teamName, teamColor, opacity)
             leftY += L.CARD_HEIGHT + L.CARD_GAP
         }
 
         // ──────────── 渲染右侧玩家 ────────────
         val rightPlayers = HudSelectionState.getPlayersBySide(DisplaySide.RIGHT)
         var rightY = L.MARGIN
-        // 右侧编号序列：6, 7, 8, 9, 0
-        val rightHotkeyNumbers = listOf(6, 7, 8, 9, 0)
-        for ((index, player) in rightPlayers.withIndex()) {
+        for (player in rightPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
-            val hotkeyNumber = if (index < rightHotkeyNumbers.size) rightHotkeyNumbers[index] else -1
             PlayerCardRenderer.renderCard(
                 drawContext, player,
                 screenWidth - L.CARD_WIDTH - L.MARGIN, rightY,
-                teamName, teamColor, opacity, hotkeyNumber
+                teamName, teamColor, opacity
             )
             rightY += L.CARD_HEIGHT + L.CARD_GAP
         }
