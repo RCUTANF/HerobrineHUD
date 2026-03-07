@@ -130,5 +130,7 @@ data class ConfigData(
     /** 是否显示玩家头像 */
     var showAvatar: Boolean = true,
     /** 卡片缩放系数 (0.5~2.0) */
-    var cardScale: Float = 1.0f
+    var cardScale: Float = 1.0f,
+    /** 卡片起始 Y 坐标偏移（从屏幕顶部开始的像素距离） */
+    var cardStartY: Int = 50
 )

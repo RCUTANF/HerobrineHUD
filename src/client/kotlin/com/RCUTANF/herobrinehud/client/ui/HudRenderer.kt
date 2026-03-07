@@ -30,7 +30,7 @@ object HudRenderer : HudRenderCallback {
 
         // ──────────── 渲染左侧玩家 ────────────
         val leftPlayers = HudSelectionState.getPlayersBySide(DisplaySide.LEFT)
-        var leftY = L.MARGIN
+        var leftY = HudConfig.data.cardStartY
         for (player in leftPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
             PlayerCardRenderer.renderCard(drawContext, player, L.MARGIN, leftY, teamName, teamColor, opacity)
@@ -39,7 +39,7 @@ object HudRenderer : HudRenderCallback {
 
         // ──────────── 渲染右侧玩家 ────────────
         val rightPlayers = HudSelectionState.getPlayersBySide(DisplaySide.RIGHT)
-        var rightY = L.MARGIN
+        var rightY = HudConfig.data.cardStartY
         for (player in rightPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
             PlayerCardRenderer.renderCard(
