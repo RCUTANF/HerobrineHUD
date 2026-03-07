@@ -1,5 +1,8 @@
 package com.RCUTANF.herobrinehud.client
 
+import com.RCUTANF.herobrinehud.client.ui.HudRenderer
+import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
+import com.RCUTANF.herobrinehud.client.util.SpectatorTracker
 import com.RCUTANF.herobrinehud.network.FullSyncPayload
 import com.RCUTANF.herobrinehud.network.HudPayloadIds
 import com.RCUTANF.herobrinehud.network.IncrementalUpdatePayload

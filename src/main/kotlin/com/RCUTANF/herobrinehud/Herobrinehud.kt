@@ -1,8 +1,8 @@
 package com.RCUTANF.herobrinehud
 
 import com.RCUTANF.herobrinehud.network.*
-import com.RCUTANF.herobrinehud.team.PlayerDataCallback
-import com.RCUTANF.herobrinehud.team.TeamManager
+import com.RCUTANF.herobrinehud.collector.PlayerDataCallback
+import com.RCUTANF.herobrinehud.collector.TeamManager
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents

@@ -1,6 +1,6 @@
 package com.RCUTANF.herobrinehud.mixin;
 
-import com.RCUTANF.herobrinehud.team.PlayerDataCallback;
+import com.RCUTANF.herobrinehud.collector.PlayerDataCallback;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ServerItemCooldowns;

@@ -1,5 +1,8 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.ClientTeamData
+import com.RCUTANF.herobrinehud.client.DisplaySide
+import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.minecraft.client.DeltaTracker

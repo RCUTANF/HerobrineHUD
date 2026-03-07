@@ -1,5 +1,9 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.ClientTeamData
+import com.RCUTANF.herobrinehud.client.DisplaySide
+import com.RCUTANF.herobrinehud.client.HudConfig
+import com.RCUTANF.herobrinehud.client.PlayerPlacement
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import org.slf4j.LoggerFactory

@@ -1,4 +1,4 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
 /**
  * 玩家卡片布局常量

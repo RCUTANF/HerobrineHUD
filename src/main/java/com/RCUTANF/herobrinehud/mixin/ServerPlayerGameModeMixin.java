@@ -1,6 +1,6 @@
 package com.RCUTANF.herobrinehud.mixin;
 
-import com.RCUTANF.herobrinehud.team.PlayerDataCallback;
+import com.RCUTANF.herobrinehud.collector.PlayerDataCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.level.GameType;

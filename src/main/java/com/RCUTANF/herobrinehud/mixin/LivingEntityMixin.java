@@ -1,6 +1,6 @@
 package com.RCUTANF.herobrinehud.mixin;
 
-import com.RCUTANF.herobrinehud.team.PlayerDataCallback;
+import com.RCUTANF.herobrinehud.collector.PlayerDataCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;

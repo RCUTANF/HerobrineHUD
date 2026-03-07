@@ -1,7 +1,6 @@
 package com.RCUTANF.herobrinehud.mixin;
 
-import com.RCUTANF.herobrinehud.team.PlayerDataCallback;
-import net.minecraft.nbt.CompoundTag;
+import com.RCUTANF.herobrinehud.collector.PlayerDataCallback;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.ValueInput;

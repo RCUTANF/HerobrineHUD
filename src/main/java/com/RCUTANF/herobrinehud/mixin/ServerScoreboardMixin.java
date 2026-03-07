@@ -1,6 +1,6 @@
 package com.RCUTANF.herobrinehud.mixin;
 
-import com.RCUTANF.herobrinehud.team.TeamSyncCallback;
+import com.RCUTANF.herobrinehud.collector.TeamSyncCallback;
 import net.minecraft.server.ServerScoreboard;
 import net.minecraft.world.scores.PlayerTeam;
 import org.spongepowered.asm.mixin.Mixin;

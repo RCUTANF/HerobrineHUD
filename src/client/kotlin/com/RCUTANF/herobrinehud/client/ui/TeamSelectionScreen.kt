@@ -1,5 +1,7 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.DisplaySide
+import com.RCUTANF.herobrinehud.client.HudConfig
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen

@@ -1,10 +1,13 @@
 // PlayerListPanel.kt
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.ClientTeamData
+import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.ObjectSelectionList
+import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 
 /**
@@ -106,7 +109,7 @@ class PlayerListPanel(
             g.drawString(font, label, x + (BTN_W - tw) / 2, y + 3, textColor, false)
         }
 
-        override fun mouseClicked(event: net.minecraft.client.input.MouseButtonEvent, isDoubleClick: Boolean): Boolean {
+        override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
             val mouseX = event.x.toInt()
             val mouseY = event.y.toInt()
 

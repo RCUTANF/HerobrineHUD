@@ -2,7 +2,7 @@ package com.RCUTANF.herobrinehud.network
 
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
-import com.RCUTANF.herobrinehud.team.TeamManager
+import com.RCUTANF.herobrinehud.collector.TeamManager
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer

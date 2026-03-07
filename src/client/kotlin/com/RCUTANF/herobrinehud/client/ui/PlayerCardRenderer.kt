@@ -1,6 +1,10 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
+import com.RCUTANF.herobrinehud.client.HudConfig
+import com.RCUTANF.herobrinehud.client.util.SpectatorTracker
 import com.RCUTANF.herobrinehud.data.PlayerInfo
+import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -102,7 +106,7 @@ object PlayerCardRenderer {
         if (uuid != null) {
             try {
                 val skinTexture = client.skinManager
-                    .createLookup(com.mojang.authlib.GameProfile(uuid, player.name), false)
+                    .createLookup(GameProfile(uuid, player.name), false)
                     .get()
                     .body()
                     .texturePath()

@@ -1,4 +1,4 @@
-package com.RCUTANF.herobrinehud.client
+package com.RCUTANF.herobrinehud.client.util
 
 import com.mojang.blaze3d.platform.NativeImage
 import net.minecraft.client.Minecraft

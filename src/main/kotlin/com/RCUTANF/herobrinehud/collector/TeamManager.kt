@@ -1,4 +1,4 @@
-package com.RCUTANF.herobrinehud.team
+package com.RCUTANF.herobrinehud.collector
 
 import com.RCUTANF.herobrinehud.data.AvatarResolver
 import com.RCUTANF.herobrinehud.data.Equipment

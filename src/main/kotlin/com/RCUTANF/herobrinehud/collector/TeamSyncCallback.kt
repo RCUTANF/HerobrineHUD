@@ -1,4 +1,4 @@
-package com.RCUTANF.herobrinehud.team
+package com.RCUTANF.herobrinehud.collector
 
 import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.EventFactory
