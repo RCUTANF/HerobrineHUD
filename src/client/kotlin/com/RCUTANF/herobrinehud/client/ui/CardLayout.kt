@@ -54,7 +54,7 @@ object CardLayout {
 
     // ── 效果徽章区域 ──────────────────────────────────────────
     const val EFFECTS_Y = 46          // 效果徽章起始 Y 偏移（护甲槽位下方，紧凑布局）
-    const val EFFECT_BADGE_SIZE = 6   // 效果徽章大小（缩小以适应窄卡片）
+    const val EFFECT_BADGE_SIZE = 5   // 效果徽章大小（缩小以适应窄卡片）
     const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距
 
     // ── 废弃的常量（保留以防其他地方引用） ──────────────────

@@ -496,7 +496,7 @@ object PlayerCardRenderer {
                 val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
                 // 缩小罗马数字渲染
                 pose.pushMatrix()
-                val numScale = 0.5f
+                val numScale = 0.35f  // 进一步缩小罗马数字
                 // 计算右上角位置
                 val romanWidth = (font.width(roman) * numScale).toInt()
                 val romanX = bx + L.EFFECT_BADGE_SIZE - romanWidth
