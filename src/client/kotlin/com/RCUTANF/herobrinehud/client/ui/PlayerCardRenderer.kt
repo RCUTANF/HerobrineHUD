@@ -42,8 +42,8 @@ object PlayerCardRenderer {
     fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int) {
         val config = HudConfig.data
 
-        // 卡片背景
-        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+        // 卡片背景：使用维度对应方块的纹理
+        renderCardBackground(ctx, player, cardX, cardY, opacity)
 
         // 竖向布局：
         // 1. 顶部：头像（左） + 主副手物品（右）
@@ -98,6 +98,80 @@ object PlayerCardRenderer {
             val availableWidth = L.CARD_WIDTH - 4
             renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  卡片背景
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 渲染卡片背景，使用维度对应方块的纹理
+     * 
+     * @param ctx    GuiGraphics 上下文
+     * @param player 玩家数据
+     * @param cardX  卡片左上角 X
+     * @param cardY  卡片左上角 Y
+     * @param opacity 不透明度 (0-255)
+     */
+    private fun renderCardBackground(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, opacity: Int) {
+        val dim = player.dimension
+        
+        // 如果没有维度信息，使用纯色背景
+        if (dim == null) {
+            ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+            return
+        }
+        
+        // 通过枚举查找对应纹理路径
+        val dimIcon = CardLayout.DimensionIcon.fromDimensionId(dim)
+        
+        // 如果找不到对应的维度图标，使用纯色背景
+        if (dimIcon == null) {
+            ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+            return
+        }
+        
+        // 先绘制半透明黑色底色
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+        
+        // 构建纹理标识符
+        val textureLocation = Identifier.parse(dimIcon.textureId)
+        
+        // 平铺渲染方块纹理（16x16原始大小）
+        val tileSize = 16
+        
+        var tileY = 0
+        while (tileY < L.CARD_HEIGHT) {
+            var tileX = 0
+            while (tileX < L.CARD_WIDTH) {
+                // 计算实际渲染位置（卡片坐标 + 平铺偏移）
+                val x0 = cardX + tileX
+                val y0 = cardY + tileY
+                
+                // 计算当前tile的实际渲染尺寸（处理边缘裁剪）
+                val renderWidth = tileSize.coerceAtMost(L.CARD_WIDTH - tileX)
+                val renderHeight = tileSize.coerceAtMost(L.CARD_HEIGHT - tileY)
+                
+                // 计算右下角坐标
+                val x1 = x0 + renderWidth
+                val y1 = y0 + renderHeight
+                
+                // 计算UV坐标（纹理坐标范围 0.0 - 1.0）
+                val u0 = 0f
+                val v0 = 0f
+                val u1 = renderWidth.toFloat() / 16f
+                val v1 = renderHeight.toFloat() / 16f
+                
+                // 使用 blit 方法渲染纹理
+                ctx.blit(textureLocation, x0, y0, x1, y1, u0, u1, v0, v1)
+                
+                tileX += tileSize
+            }
+            tileY += tileSize
+        }
+        
+        // 在纹理上方叠加一层半透明黑色，使纹理不会太亮
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, ((opacity / 3) shl 24) or 0x000000)
     }
 
     // ──────────────────────────────────────────────────────────────

@@ -92,15 +92,15 @@ object CardLayout {
 
     // ── 维度图标枚举 ──────────────────────────────────────────
     /**
-     * 将维度 ID 映射到原版方块物品 ID，用于渲染图标徽章
-     *  - 主世界 → 草方块 (grass_block)
-     *  - 地狱   → 地狱岩 (netherrack)
-     *  - 末地   → 末地岩 (end_stone)
+     * 将维度 ID 映射到方块纹理路径，用于渲染卡片背景
+     *  - 主世界 → 草方块纹理 (grass_block_top)
+     *  - 地狱   → 地狱岩纹理 (netherrack)
+     *  - 末地   → 末地岩纹理 (end_stone)
      */
-    enum class DimensionIcon(val dimensionId: String, val blockItemId: String) {
-        OVERWORLD("minecraft:overworld",  "minecraft:grass_block"),
-        NETHER   ("minecraft:the_nether", "minecraft:netherrack"),
-        THE_END  ("minecraft:the_end",    "minecraft:end_stone");
+    enum class DimensionIcon(val dimensionId: String, val textureId: String, val blockItemId: String) {
+        OVERWORLD("minecraft:overworld",  "minecraft:textures/block/dirt.png", "minecraft:grass_block"),
+        NETHER   ("minecraft:the_nether", "minecraft:textures/block/netherrack.png", "minecraft:netherrack"),
+        THE_END  ("minecraft:the_end",    "minecraft:textures/block/end_stone.png", "minecraft:end_stone");
 
         companion object {
             /** 根据维度 ID 查找对应枚举项，找不到返回 null */
