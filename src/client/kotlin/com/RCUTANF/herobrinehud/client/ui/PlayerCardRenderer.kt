@@ -119,6 +119,7 @@ object PlayerCardRenderer {
         // 如果没有维度信息，使用纯色背景
         if (dim == null) {
             ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+            drawCardBorder(ctx, cardX, cardY, opacity)
             return
         }
         
@@ -128,6 +129,7 @@ object PlayerCardRenderer {
         // 如果找不到对应的维度图标，使用纯色背景
         if (dimIcon == null) {
             ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+            drawCardBorder(ctx, cardX, cardY, opacity)
             return
         }
         
@@ -171,7 +173,35 @@ object PlayerCardRenderer {
         }
         
         // 在纹理上方叠加一层半透明黑色，使纹理不会太亮
-        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, ((opacity / 3) shl 24) or 0x000000)
+        val overlayAlpha = (opacity / 3).coerceIn(0, 255)
+        val overlayColor = (overlayAlpha shl 24) or 0x000000
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, overlayColor)
+        
+        // 绘制淡灰色边框
+        drawCardBorder(ctx, cardX, cardY, opacity)
+    }
+    
+    /**
+     * 绘制卡片边框
+     *
+     * @param ctx    GuiGraphics 上下文
+     * @param cardX  卡片左上角 X
+     * @param cardY  卡片左上角 Y
+     * @param opacity 不透明度 (0-255)
+     */
+    private fun drawCardBorder(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+        val borderAlpha = (opacity * 2 / 3).coerceIn(0, 255)
+        val borderColor = (borderAlpha shl 24) or 0x808080  // 灰色 RGB(128, 128, 128)
+        val borderWidth = 1
+        
+        // 上边框
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + borderWidth, borderColor)
+        // 下边框
+        ctx.fill(cardX, cardY + L.CARD_HEIGHT - borderWidth, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, borderColor)
+        // 左边框
+        ctx.fill(cardX, cardY, cardX + borderWidth, cardY + L.CARD_HEIGHT, borderColor)
+        // 右边框
+        ctx.fill(cardX + L.CARD_WIDTH - borderWidth, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, borderColor)
     }
 
     // ──────────────────────────────────────────────────────────────
