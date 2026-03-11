@@ -17,11 +17,12 @@ import java.util.UUID
 /**
  * 玩家卡片渲染器
  *
- * 负责渲染单张玩家信息卡片，包含：
- *  - 左侧：头像 + 名称
- *  - 右侧第一行：生命值条 + 维度徽章
- *  - 右侧第二行：护甲值 + 四个护甲槽位图标
- *  - 右侧第三行：主副手图标 + 效果徽章
+ * 负责渲染单张玩家信息卡片（竖向布局），包含：
+ *  - 顶部：头像（左）+ 主副手物品（右）
+ *  - 头像下方：名称
+ *  - 名称下方：心形+血量（左）和盔甲图标+盔甲值（右）横向并列（缩小60%）
+ *  - 其下：四个护甲槽位（居中）
+ *  - 最下：效果徽章
  */
 object PlayerCardRenderer {
 
@@ -47,10 +48,9 @@ object PlayerCardRenderer {
         // 竖向布局：
         // 1. 顶部：头像（左） + 主副手物品（右）
         // 2. 头像下方：名称
-        // 3. 名称下方：队伍名称
-        // 4. 队伍名称下方：左侧心形+血量，右侧盔甲图标+盔甲值
-        // 5. 其下：四个护甲槽位
-        // 6. 最下：效果徽章
+        // 3. 名称下方：心形+血量（左）和盔甲图标+盔甲值（右）横向并列（缩小60%）
+        // 4. 其下：四个护甲槽位（居中）
+        // 5. 最下：效果徽章
 
         val avatarX = cardX + L.AVATAR_X_OFFSET
         val avatarY = cardY + L.AVATAR_Y_OFFSET
@@ -75,11 +75,11 @@ object PlayerCardRenderer {
         val nameY = cardY + L.NAME_Y_OFFSET
         renderName(ctx, player, nameX, nameY, opacity)
 
-        // 3. 队伍名（名称下方）
-        val teamNameY = cardY + L.TEAM_NAME_Y_OFFSET
-        renderTeamName(ctx, teamName, teamColor, nameX, teamNameY, opacity)
+        // 3. 队伍名（名称下方）- 暂时不渲染
+        // val teamNameY = cardY + L.TEAM_NAME_Y_OFFSET
+        // renderTeamName(ctx, teamName, teamColor, nameX, teamNameY, opacity)
 
-        // 4. 血量和盔甲值（左右分布）
+        // 4. 血量和盔甲值（竖向排列）
         if (config.showHealthNumber || config.showArmor) {
             val healthArmorY = cardY + L.HEALTH_ARMOR_Y
             renderHealthAndArmorValuesVertical(ctx, player, cardX, healthArmorY, opacity)
@@ -294,33 +294,39 @@ object PlayerCardRenderer {
     //  护甲行（护甲值 + 四个护甲槽位）
     // ──────────────────────────────────────────────────────────────
 
-    // 新增：竖向布局专用 - 在卡片中央显示心形图标+血量（左）和盔甲图标+盔甲值（右）
+    // 新增：竖向布局专用 - 横向并列心形图标+血量和盔甲图标+盔甲值（缩小尺寸）
     private fun renderHealthAndArmorValuesVertical(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val iconSize = L.HEART_ICON_SIZE
-
+        val scale = 0.6f  // 缩放到60%大小
+        
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(cardX.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        
         // 左侧：心形图标 + 血量文本
-        val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
-        val leftX = cardX + L.HEALTH_X_OFFSET
-        
-        // 渲染心形图标（使用游戏内的心形纹理）
+        val healthText = "${player.health.toInt()}"
         val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
-        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, y, iconSize, iconSize)
+        val leftX = 2
         
-        // 血量文本紧随其后
-        val healthTextX = leftX + iconSize + L.ICON_TEXT_GAP
-        ctx.drawString(font, healthText, healthTextX, y, (opacity shl 24) or 0xFFFFFF, false)
+        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
+        ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
 
         // 右侧：盔甲图标 + 盔甲值
         val armorValueText = "${player.armor}"
+        val armorIconX = 26  // 右侧位置
         
-        // 盔甲图标位置（右侧对齐）
-        val armorIconX = cardX + L.ARMOR_X_OFFSET
-        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", armorIconX, y, iconSize, opacity)
+        // 临时保存当前矩阵状态
+        pose.popMatrix()
+        pose.pushMatrix()
+        pose.translate(cardX.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
         
-        // 护甲值文本放在图标右侧
-        val armorTextX = armorIconX + iconSize + L.ICON_TEXT_GAP
-        ctx.drawString(font, armorValueText, armorTextX, y, (opacity shl 24) or 0xAAAAAA, false)
+        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
+        ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+        
+        pose.popMatrix()
     }
 
     // 新增：竖向布局专用 - 居中渲染四个护甲槽位
@@ -337,48 +343,6 @@ object PlayerCardRenderer {
             renderSmallItemSlot(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
             slotX += L.SLOT_SIZE + L.SLOT_GAP
         }
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    //  旧版函数（保留以防其他地方引用）
-    // ──────────────────────────────────────────────────────────────
-
-    // 修改：现在护甲值在上一行渲染，这里只负责绘制四个护甲槽位
-    private fun renderArmorRow(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
-        val eq = player.equipment
-        val armorItems = listOf(eq.helmet, eq.chestplate, eq.leggings, eq.boots)
-        var slotX = x
-        for (itemId in armorItems) {
-            renderSmallItemSlot(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
-            slotX += L.SLOT_SIZE + L.SLOT_GAP
-        }
-    }
-
-    // 新增：在名字下方显示 心形图标 + 血量（左侧），以及 盔甲图标 + 护甲值（右侧）
-    private fun renderHealthAndArmorValues(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, availableWidth: Int, opacity: Int) {
-        val font = Minecraft.getInstance().font
-
-        // 左侧：心形 + 血量文本
-        val heart = "❤"
-        val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
-        val heartColor = (opacity shl 24) or 0xFF5555
-        val leftX = x
-        val leftY = y
-        // 心形
-        ctx.drawString(font, heart, leftX, leftY, heartColor, true)
-        // 血量文本紧随其后
-        val hx = leftX + font.width(heart) + 4
-        ctx.drawString(font, healthText, hx, leftY, (opacity shl 24) or 0xFFFFFF, false)
-
-        // 右侧：盔甲图标 + 盔甲值
-        val armorValueText = "${player.armor}"
-        val iconSize = L.ARMOR_ICON_SIZE
-        val rightIconX = x + availableWidth - iconSize
-        val iconY = y
-        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", rightIconX, iconY, iconSize, opacity)
-        // 护甲值文本放在图标左侧
-        val textX = rightIconX - 4 - font.width(armorValueText)
-        ctx.drawString(font, armorValueText, textX, leftY, (opacity shl 24) or 0xAAAAAA, false)
     }
 
     // ──────────────────────────────────────────────────────────────
