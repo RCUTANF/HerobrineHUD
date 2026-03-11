@@ -455,7 +455,8 @@ object PlayerCardRenderer {
         pose.translate(cardX.toFloat(), y.toFloat())
         pose.scale(scale, scale)
         
-        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
+        // 渲染盔甲图标（不带灰色底纹）
+        renderArmorIconOnly(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
         ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
         
         pose.popMatrix()
@@ -472,7 +473,7 @@ object PlayerCardRenderer {
         
         var slotX = startX
         for (itemId in armorItems) {
-            renderSmallItemSlot(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
+            renderSmallItemSlotWithBorder(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
             slotX += L.SLOT_SIZE + L.SLOT_GAP
         }
     }
@@ -484,9 +485,9 @@ object PlayerCardRenderer {
     private fun renderHandIcons(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val eq = player.equipment
         // 主手在上方
-        renderItemSlot(ctx, eq.mainHand, x, y, L.HAND_SLOT_SIZE, opacity)
+        renderItemSlotWithBorder(ctx, eq.mainHand, x, y, L.HAND_SLOT_SIZE, opacity)
         // 副手在下方（紧贴主手）
-        renderItemSlot(ctx, eq.offHand, x, y + L.HAND_SLOT_SIZE + L.HAND_GAP, L.HAND_SLOT_SIZE, opacity)
+        renderItemSlotWithBorder(ctx, eq.offHand, x, y + L.HAND_SLOT_SIZE + L.HAND_GAP, L.HAND_SLOT_SIZE, opacity)
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -609,6 +610,110 @@ object PlayerCardRenderer {
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
 
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        val scale = size / 16f
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        try {
+            ctx.renderItem(stack, 0, 0)
+        } catch (_: Exception) {
+            // 物品渲染异常时静默忽略
+        }
+        pose.popMatrix()
+    }
+
+    /**
+     * 渲染带白色外框的小尺寸物品槽位（用于盔甲槽位）
+     */
+    private fun renderSmallItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
+        // 背景
+        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+
+        // 使用缩放绘制更细的白色外框（0.5 像素宽）
+        val borderColor = (opacity shl 24) or 0xFFFFFF
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(0.5f, 0.5f)
+        
+        val scaledSize = (size * 2)
+        // 上边框
+        ctx.fill(0, 0, scaledSize, 1, borderColor)
+        // 下边框
+        ctx.fill(0, scaledSize - 1, scaledSize, scaledSize, borderColor)
+        // 左边框
+        ctx.fill(0, 0, 1, scaledSize, borderColor)
+        // 右边框
+        ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
+        
+        pose.popMatrix()
+
+        if (itemId == null) return
+        val stack = resolveItemStack(itemId) ?: return
+
+        // 缩放矩阵渲染物品
+        pose.pushMatrix()
+        val scale = size / 16f
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        try {
+            ctx.renderItem(stack, 0, 0)
+        } catch (_: Exception) {
+            // 物品渲染异常时静默忽略
+        }
+        pose.popMatrix()
+    }
+
+    /**
+     * 渲染带白色外框的标准物品槽位（用于主副手）
+     */
+    private fun renderItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
+        // 背景
+        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+
+        // 使用缩放绘制更细的白色外框（0.5 像素宽）
+        val borderColor = (opacity shl 24) or 0xFFFFFF
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(0.5f, 0.5f)
+        
+        val scaledSize = (size * 2)
+        // 上边框
+        ctx.fill(0, 0, scaledSize, 1, borderColor)
+        // 下边框
+        ctx.fill(0, scaledSize - 1, scaledSize, scaledSize, borderColor)
+        // 左边框
+        ctx.fill(0, 0, 1, scaledSize, borderColor)
+        // 右边框
+        ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
+        
+        pose.popMatrix()
+
+        if (itemId == null) return
+        val stack = resolveItemStack(itemId) ?: return
+
+        pose.pushMatrix()
+        val scale = size / 16f
+        pose.translate(x.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        try {
+            ctx.renderItem(stack, 0, 0)
+        } catch (_: Exception) {
+            // 物品渲染异常时静默忽略
+        }
+        pose.popMatrix()
+    }
+
+    /**
+     * 渲染盔甲图标（不带灰色底纹）
+     */
+    private fun renderArmorIconOnly(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
+        if (itemId == null) return
+        val stack = resolveItemStack(itemId) ?: return
+
+        // 缩放矩阵渲染（不绘制背景）
         val pose = ctx.pose()
         pose.pushMatrix()
         val scale = size / 16f
