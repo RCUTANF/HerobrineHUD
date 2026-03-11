@@ -106,6 +106,7 @@ object PlayerCardRenderer {
 
     /**
      * 渲染卡片背景，使用维度对应方块的纹理
+     * 纹理高度根据玩家血量百分比动态调整，从下往上填充
      * 
      * @param ctx    GuiGraphics 上下文
      * @param player 玩家数据
@@ -133,26 +134,42 @@ object PlayerCardRenderer {
             return
         }
         
-        // 先绘制半透明黑色底色
+        // 先绘制半透明黑色底色（整个卡片）
         ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
+        
+        // 计算血量百分比（0.0 - 1.0）
+        val healthPercent = (player.health / player.maxHealth).coerceIn(0.0, 1.0)
+        
+        // 计算纹理应该占据的高度（从下往上）
+        val textureHeight = (L.CARD_HEIGHT * healthPercent).toInt()
+        
+        // 如果血量为0，不绘制纹理
+        if (textureHeight <= 0) {
+            drawCardBorder(ctx, cardX, cardY, opacity)
+            return
+        }
+        
+        // 计算纹理绘制的起始Y坐标（从底部向上）
+        val textureStartY = cardY + L.CARD_HEIGHT - textureHeight
         
         // 构建纹理标识符
         val textureLocation = Identifier.parse(dimIcon.textureId)
         
-        // 平铺渲染方块纹理（16x16原始大小）
+        // 平铺渲染方块纹理（16x16原始大小），只渲染血量对应的高度
         val tileSize = 16
         
+        // 从纹理起始位置开始平铺
         var tileY = 0
-        while (tileY < L.CARD_HEIGHT) {
+        while (tileY < textureHeight) {
             var tileX = 0
             while (tileX < L.CARD_WIDTH) {
                 // 计算实际渲染位置（卡片坐标 + 平铺偏移）
                 val x0 = cardX + tileX
-                val y0 = cardY + tileY
+                val y0 = textureStartY + tileY
                 
                 // 计算当前tile的实际渲染尺寸（处理边缘裁剪）
                 val renderWidth = tileSize.coerceAtMost(L.CARD_WIDTH - tileX)
-                val renderHeight = tileSize.coerceAtMost(L.CARD_HEIGHT - tileY)
+                val renderHeight = tileSize.coerceAtMost(textureHeight - tileY)
                 
                 // 计算右下角坐标
                 val x1 = x0 + renderWidth
@@ -172,10 +189,10 @@ object PlayerCardRenderer {
             tileY += tileSize
         }
         
-        // 在纹理上方叠加一层半透明黑色，使纹理不会太亮
+        // 在纹理上方叠加一层半透明黑色，使纹理不会太亮（只覆盖纹理区域）
         val overlayAlpha = (opacity / 3).coerceIn(0, 255)
         val overlayColor = (overlayAlpha shl 24) or 0x000000
-        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, overlayColor)
+        ctx.fill(cardX, textureStartY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, overlayColor)
         
         // 绘制淡灰色边框
         drawCardBorder(ctx, cardX, cardY, opacity)
@@ -376,24 +393,6 @@ object PlayerCardRenderer {
             val textX = x + (L.HEALTH_BAR_WIDTH - textWidth) / 2
             ctx.drawString(font, healthText, textX, y, (opacity shl 24) or 0xFFFFFF, true)
         }
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    //  维度徽章
-    // ──────────────────────────────────────────────────────────────
-
-    private fun renderDimensionBadge(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
-        val dim = player.dimension ?: return
-
-        // 通过枚举查找对应方块物品 ID；未知维度则跳过渲染
-        val dimIcon = CardLayout.DimensionIcon.fromDimensionId(dim) ?: return
-
-        val iconSize = L.DIM_BADGE_ICON_SIZE
-        val iconX = cardX + L.CARD_WIDTH - iconSize - L.DIM_BADGE_X_FROM_RIGHT
-        // 垂直居中对齐到血量条（ROW1_Y 区域高度约为 HEALTH_BAR_HEIGHT，取中间）
-        val iconY = y + (L.HEALTH_BAR_HEIGHT - iconSize) / 2
-
-        renderSmallItemSlot(ctx, dimIcon.blockItemId, iconX, iconY, iconSize, opacity)
     }
 
     // ──────────────────────────────────────────────────────────────
