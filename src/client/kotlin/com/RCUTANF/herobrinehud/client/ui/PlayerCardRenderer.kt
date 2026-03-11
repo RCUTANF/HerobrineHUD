@@ -28,7 +28,7 @@ object PlayerCardRenderer {
     private val L = CardLayout
 
     /**
-     * 渲染完整的玩家卡片
+     * 渲染完整的玩家卡片（竖向布局）
      *
      * @param ctx       GuiGraphics 上下文
      * @param player    玩家数据
@@ -44,45 +44,59 @@ object PlayerCardRenderer {
         // 卡片背景
         ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
 
-        // ── 左侧：头像 + 名称 ──────────────────────────────
+        // 竖向布局：
+        // 1. 顶部：头像（左） + 主副手物品（右）
+        // 2. 头像下方：名称
+        // 3. 名称下方：队伍名称
+        // 4. 队伍名称下方：左侧心形+血量，右侧盔甲图标+盔甲值
+        // 5. 其下：四个护甲槽位
+        // 6. 最下：效果徽章
+
+        val avatarX = cardX + L.AVATAR_X_OFFSET
+        val avatarY = cardY + L.AVATAR_Y_OFFSET
+
+        // 1. 顶部：头像 + 旁观高亮
         if (config.showAvatar) {
-            renderAvatar(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
-            // 如果当前正在旁观该玩家，在头像周围绘制黄色高亮框
+            renderAvatar(ctx, player, avatarX, avatarY, opacity)
             if (ClientTeamData.isSpectating(player.uuid)) {
-                renderSpectateHighlight(ctx, cardX + L.AVATAR_X_OFFSET, cardY + L.AVATAR_Y_OFFSET, opacity)
+                renderSpectateHighlight(ctx, avatarX, avatarY, opacity)
             }
         }
-        renderName(ctx, player, cardX + L.AVATAR_X_OFFSET, cardY + L.NAME_Y_OFFSET, opacity)
 
-        // ── 队伍名称 ────────────────────────────────────────
-        renderTeamName(ctx, teamName, teamColor, cardX + L.AVATAR_X_OFFSET, cardY + L.TEAM_NAME_Y_OFFSET, opacity)
-
-        // ── 快捷键编号 ──────────────────────────────────────
-        val hotkeyNumber = ClientTeamData.getPlayerHotkey(player.uuid)
-        if (hotkeyNumber >= 0) {
-            renderHotkeyNumber(ctx, hotkeyNumber, cardX + L.AVATAR_X_OFFSET, cardY + L.HOTKEY_Y_OFFSET, opacity)
-        }
-
-        // ── 右侧第一行：生命值条 + 维度 ──────────────────────
-        val infoX = cardX + L.INFO_X
-        renderHealthBar(ctx, player, infoX, cardY + L.ROW1_Y, opacity)
-        if (config.showDimension) {
-            renderDimensionBadge(ctx, player, cardX, cardY + L.ROW1_Y, opacity)
-        }
-
-        // ── 右侧第二行：护甲值 + 护甲槽 ──────────────────────
-        if (config.showArmor) {
-            renderArmorRow(ctx, player, infoX, cardY + L.ROW2_Y, opacity)
-        }
-
-        // ── 右侧第三行：主副手 + 效果徽章 ────────────────────
+        // 1. 顶部右侧：主副手物品（与头像同一行）
         if (config.showEquipment) {
-            renderHandIcons(ctx, player, infoX, cardY + L.ROW3_Y, opacity)
+            val handX = cardX + L.HAND_X_OFFSET
+            val handY = cardY + L.HAND_Y_OFFSET
+            renderHandIcons(ctx, player, handX, handY, opacity)
         }
+
+        // 2. 名称（头像下方，居中）
+        val nameX = cardX + 2
+        val nameY = cardY + L.NAME_Y_OFFSET
+        renderName(ctx, player, nameX, nameY, opacity)
+
+        // 3. 队伍名（名称下方）
+        val teamNameY = cardY + L.TEAM_NAME_Y_OFFSET
+        renderTeamName(ctx, teamName, teamColor, nameX, teamNameY, opacity)
+
+        // 4. 血量和盔甲值（左右分布）
+        if (config.showHealthNumber || config.showArmor) {
+            val healthArmorY = cardY + L.HEALTH_ARMOR_Y
+            renderHealthAndArmorValuesVertical(ctx, player, cardX, healthArmorY, opacity)
+        }
+
+        // 5. 护甲槽位（四个槽位，居中排列）
+        if (config.showArmor) {
+            val armorSlotsY = cardY + L.ARMOR_SLOTS_Y
+            renderArmorRowCentered(ctx, player, cardX, armorSlotsY, opacity)
+        }
+
+        // 6. 效果徽章（底部，居中排列）
         if (config.showEffects) {
-            val effectStartX = infoX + L.HAND_SLOT_SIZE * 2 + L.EFFECT_BADGE_GAP * 3 + 2
-            val effectAvailableWidth = cardX + L.CARD_WIDTH - effectStartX - 2
-            renderEffectBadges(ctx, player, effectStartX, cardY + L.ROW3_Y, effectAvailableWidth, opacity)
+            val effectsY = cardY + L.EFFECTS_Y
+            val effectsX = cardX + 2
+            val availableWidth = L.CARD_WIDTH - 4
+            renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
         }
     }
 
@@ -280,26 +294,92 @@ object PlayerCardRenderer {
     //  护甲行（护甲值 + 四个护甲槽位）
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderArmorRow(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    // 新增：竖向布局专用 - 在卡片中央显示心形+血量（左）和盔甲图标+盔甲值（右）
+    private fun renderHealthAndArmorValuesVertical(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
 
-        // 铁胸甲图标（作为护甲值的标识符）
-        val iconY = y + (L.SLOT_SIZE - L.ARMOR_ICON_SIZE) / 2
-        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", x, iconY, L.ARMOR_ICON_SIZE, opacity)
+        // 左侧：心形 + 血量文本
+        val heart = "❤"
+        val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
+        val heartColor = (opacity shl 24) or 0xFF5555
+        val leftX = cardX + L.HEALTH_X_OFFSET
+        
+        // 渲染心形图标
+        ctx.drawString(font, heart, leftX, y, heartColor, true)
+        // 血量文本紧随其后
+        val healthTextX = leftX + font.width(heart) + L.ICON_TEXT_GAP
+        ctx.drawString(font, healthText, healthTextX, y, (opacity shl 24) or 0xFFFFFF, false)
 
-        // 护甲值数字（紧跟图标右侧，垂直居中）
-        val textX = x + L.ARMOR_ICON_SIZE + L.ARMOR_ICON_GAP
-        val textY = y + (L.SLOT_SIZE - 7) / 2  // 7 为 MC 默认字体高度
-        ctx.drawString(font, "${player.armor}", textX, textY, (opacity shl 24) or 0xAAAAAA, false)
+        // 右侧：盔甲图标 + 盔甲值
+        val armorValueText = "${player.armor}"
+        val armorTextWidth = font.width(armorValueText)
+        val iconSize = L.ARMOR_ICON_SIZE
+        
+        // 盔甲图标位置（右侧对齐）
+        val armorIconX = cardX + L.ARMOR_X_OFFSET
+        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", armorIconX, y, iconSize, opacity)
+        
+        // 护甲值文本放在图标右侧
+        val armorTextX = armorIconX + iconSize + L.ICON_TEXT_GAP
+        ctx.drawString(font, armorValueText, armorTextX, y, (opacity shl 24) or 0xAAAAAA, false)
+    }
 
-        // 四个护甲槽位
+    // 新增：竖向布局专用 - 居中渲染四个护甲槽位
+    private fun renderArmorRowCentered(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
         val eq = player.equipment
         val armorItems = listOf(eq.helmet, eq.chestplate, eq.leggings, eq.boots)
-        var slotX = x + L.ARMOR_VALUE_WIDTH + 2
+        
+        // 计算总宽度并居中
+        val totalWidth = (L.SLOT_SIZE * 4) + (L.SLOT_GAP * 3)
+        val startX = cardX + (L.CARD_WIDTH - totalWidth) / 2
+        
+        var slotX = startX
         for (itemId in armorItems) {
             renderSmallItemSlot(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
             slotX += L.SLOT_SIZE + L.SLOT_GAP
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  旧版函数（保留以防其他地方引用）
+    // ──────────────────────────────────────────────────────────────
+
+    // 修改：现在护甲值在上一行渲染，这里只负责绘制四个护甲槽位
+    private fun renderArmorRow(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+        val eq = player.equipment
+        val armorItems = listOf(eq.helmet, eq.chestplate, eq.leggings, eq.boots)
+        var slotX = x
+        for (itemId in armorItems) {
+            renderSmallItemSlot(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
+            slotX += L.SLOT_SIZE + L.SLOT_GAP
+        }
+    }
+
+    // 新增：在名字下方显示 心形图标 + 血量（左侧），以及 盔甲图标 + 护甲值（右侧）
+    private fun renderHealthAndArmorValues(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, availableWidth: Int, opacity: Int) {
+        val font = Minecraft.getInstance().font
+
+        // 左侧：心形 + 血量文本
+        val heart = "❤"
+        val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
+        val heartColor = (opacity shl 24) or 0xFF5555
+        val leftX = x
+        val leftY = y
+        // 心形
+        ctx.drawString(font, heart, leftX, leftY, heartColor, true)
+        // 血量文本紧随其后
+        val hx = leftX + font.width(heart) + 4
+        ctx.drawString(font, healthText, hx, leftY, (opacity shl 24) or 0xFFFFFF, false)
+
+        // 右侧：盔甲图标 + 盔甲值
+        val armorValueText = "${player.armor}"
+        val iconSize = L.ARMOR_ICON_SIZE
+        val rightIconX = x + availableWidth - iconSize
+        val iconY = y
+        renderSmallItemSlot(ctx, "minecraft:iron_chestplate", rightIconX, iconY, iconSize, opacity)
+        // 护甲值文本放在图标左侧
+        val textX = rightIconX - 4 - font.width(armorValueText)
+        ctx.drawString(font, armorValueText, textX, leftY, (opacity shl 24) or 0xAAAAAA, false)
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -493,4 +573,3 @@ object PlayerCardRenderer {
         ctx.fill(x + L.AVATAR_SIZE, y, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE, highlightColor)
     }
 }
-
