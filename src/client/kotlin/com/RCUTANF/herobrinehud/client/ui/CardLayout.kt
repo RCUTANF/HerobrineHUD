@@ -15,7 +15,7 @@ object CardLayout {
 
     // ── 卡片整体 ──────────────────────────────────────────────
     const val CARD_WIDTH = 30         // 窄卡片（头像16 + 主副手8 + 边距）
-    const val CARD_HEIGHT = 110       // 高卡片
+    const val CARD_HEIGHT = 55       // 高卡片
     const val CARD_GAP = 3            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
@@ -31,15 +31,16 @@ object CardLayout {
     const val HAND_GAP = 0            // 主副手之间的间距（紧贴）
 
     // ── 名称区域 ──────────────────────────────────────────────
-    const val NAME_Y_OFFSET = 20      // 名称文字在卡片内的 Y 偏移（头像下方）
-    const val NAME_MAX_WIDTH = 26     // 名称最大宽度（卡片宽度 - 边距）
+    const val NAME_Y_OFFSET = 20      // 名称文字在卡片内的 Y 偏移（头像下方，保持适当间距）
+    const val NAME_HEIGHT = 10        // 名称区域高度（增加以容纳更大的文字）
+    const val NAME_MAX_WIDTH = 28     // 名称最大宽度（占据整个卡片宽度 - 小边距）
     
     // ── 队伍名称区域 ──────────────────────────────────────────
     const val TEAM_NAME_Y_OFFSET = 30 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
 
     // ── 血量和盔甲值区域（竖向排列）──────────────────────────
-    const val HEALTH_ARMOR_Y = 30     // 血量起始 Y 偏移（名称下方）
+    const val HEALTH_ARMOR_Y = 28     // 血量起始 Y 偏移（名称下方）
     const val HEART_ICON_SIZE = 9     // 心形图标大小
     const val ARMOR_ICON_SIZE = 9     // 护甲图标大小
     const val ICON_TEXT_GAP = 2       // 图标与数字之间的间距
@@ -47,12 +48,12 @@ object CardLayout {
     const val ARMOR_X_OFFSET = 32     // 盔甲值起始 X（已废弃，现在居中）
 
     // ── 护甲槽位区域 ──────────────────────────────────────────
-    const val ARMOR_SLOTS_Y = 52      // 护甲槽位行的 Y 偏移（血量+盔甲下方）
+    const val ARMOR_SLOTS_Y = 36      // 护甲槽位行的 Y 偏移（血量+盔甲下方，紧凑布局）
     const val SLOT_SIZE = 6           // 装备槽位大小（缩小以适应窄卡片）
     const val SLOT_GAP = 1            // 槽位之间的间距
 
     // ── 效果徽章区域 ──────────────────────────────────────────
-    const val EFFECTS_Y = 62          // 效果徽章起始 Y 偏移（护甲槽位下方）
+    const val EFFECTS_Y = 46          // 效果徽章起始 Y 偏移（护甲槽位下方，紧凑布局）
     const val EFFECT_BADGE_SIZE = 6   // 效果徽章大小（缩小以适应窄卡片）
     const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距
 

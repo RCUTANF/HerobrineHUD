@@ -70,8 +70,8 @@ object PlayerCardRenderer {
             renderHandIcons(ctx, player, handX, handY, opacity)
         }
 
-        // 2. 名称（头像下方，居中）
-        val nameX = cardX + 2
+        // 2. 名称（头像下方，占据整个卡片宽度，居中）
+        val nameX = cardX
         val nameY = cardY + L.NAME_Y_OFFSET
         renderName(ctx, player, nameX, nameY, opacity)
 
@@ -178,28 +178,30 @@ object PlayerCardRenderer {
     private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val nameColor = if (player.isAlive) (opacity shl 24) or 0xFFFFFF else (opacity shl 24) or 0x888888
-        val scale = 0.5f
-        val displayName = if (font.width(player.name) > L.NAME_MAX_WIDTH) {
+        val scale = 0.6f  // 增大文字（从 0.5f 提升到 0.6f）
+        
+        // 计算在缩放后能容纳的最大宽度
+        val maxScaledWidth = L.NAME_MAX_WIDTH / scale
+        val displayName = if (font.width(player.name) > maxScaledWidth) {
             // 截断并加省略号
             var truncated = player.name
-            while (truncated.isNotEmpty() && font.width("$truncated…") > L.NAME_MAX_WIDTH) {
+            while (truncated.isNotEmpty() && font.width("$truncated…") > maxScaledWidth) {
                 truncated = truncated.dropLast(1)
             }
             "$truncated…"
         } else {
             player.name
         }
+        
         val pose = ctx.pose()
         pose.pushMatrix()
-        // 头像中心 X = x + L.AVATAR_SIZE / 2
-        // 将缩放后的文本中心对齐到头像中心
+        // 将文本居中对齐到卡片中心（卡片宽度 = L.CARD_WIDTH）
         val textWidth = font.width(displayName)
-        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
+        val textX = (L.CARD_WIDTH / scale / 2f - textWidth / 2f).toInt()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale, scale)
         ctx.drawString(font, displayName, textX, 0, nameColor, false)
         pose.popMatrix()
-
     }
 
     // ──────────────────────────────────────────────────────────────
