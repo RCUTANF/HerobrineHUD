@@ -91,12 +91,15 @@ object PlayerCardRenderer {
             renderArmorRowCentered(ctx, player, cardX, armorSlotsY, opacity)
         }
 
-        // 6. 效果徽章（底部，居中排列）
-        if (config.showEffects) {
-            val effectsY = cardY + L.EFFECTS_Y
+        // 6. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
+        val effectsY = cardY + L.EFFECTS_Y
+        if (config.showEffects && player.effects.isNotEmpty()) {
             val effectsX = cardX + 2
             val availableWidth = L.CARD_WIDTH - 4
             renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
+        } else {
+            // 当没有效果时，在效果徽章的位置绘制队伍名称
+            renderTeamNameAtEffectPosition(ctx, teamName, teamColor, cardX, effectsY, opacity)
         }
     }
 
@@ -349,6 +352,30 @@ object PlayerCardRenderer {
         ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
         pose.popMatrix()
 
+    }
+
+    /**
+     * 在效果徽章位置渲染队伍名称（当没有效果时）
+     * 使用队伍颜色，居中显示
+     */
+    private fun renderTeamNameAtEffectPosition(ctx: GuiGraphics, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int) {
+        val font = Minecraft.getInstance().font
+        val rgb = try {
+            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
+        } catch (_: Exception) {
+            0xAAAAAA
+        }
+        val teamColorInt = (opacity shl 24) or rgb
+        val scale = 0.6f
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        // 将文本居中对齐到卡片中心
+        val textWidth = font.width(teamName)
+        val textX = (L.CARD_WIDTH / 2f - textWidth * scale / 2f).toInt()
+        pose.translate(cardX.toFloat(), y.toFloat())
+        pose.scale(scale, scale)
+        ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
+        pose.popMatrix()
     }
 
     // ──────────────────────────────────────────────────────────────

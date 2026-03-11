@@ -16,19 +16,19 @@ object CardLayout {
     // ── 卡片整体 ──────────────────────────────────────────────
     const val CARD_WIDTH = 30         // 窄卡片（头像16 + 主副手8 + 边距）
     const val CARD_HEIGHT = 55       // 高卡片
-    const val CARD_GAP = 3            // 卡片之间的间距
+    const val CARD_GAP = 1            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
 
     // ── 顶部区域：头像 + 主副手 ────────────────────────────────
-    const val AVATAR_SIZE = 16        // 头像渲染大小（像素）
+    const val AVATAR_SIZE = 14        // 头像渲染大小（像素）
     const val AVATAR_X_OFFSET = 2     // 头像在卡片内的 X 偏移
-    const val AVATAR_Y_OFFSET = 2     // 头像在卡片内的 Y 偏移（顶部）
+    const val AVATAR_Y_OFFSET = 3     // 头像在卡片内的 Y 偏移（顶部）
     
     const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
     const val HAND_X_OFFSET = 20      // 主副手起始 X（头像右侧）
     const val HAND_Y_OFFSET = 2       // 主手 Y 偏移（与头像顶部对齐）
-    const val HAND_GAP = 0            // 主副手之间的间距（紧贴）
+    const val HAND_GAP = 1            // 主副手之间的间距（紧贴）
 
     // ── 名称区域 ──────────────────────────────────────────────
     const val NAME_Y_OFFSET = 20      // 名称文字在卡片内的 Y 偏移（头像下方，保持适当间距）
@@ -83,9 +83,9 @@ object CardLayout {
 
     /** 将 alpha (0-255) 组合为半透明黑色背景 ARGB */
     fun bgColor(opacity: Int): Int = ((opacity / 2) shl 24) or 0x000000
-    // ── 深色槽位背景色 ────────────────────────────────────────
-    /** 将 alpha 组合为深色背景 ARGB（用于槽位） */
-    fun slotBgColor(opacity: Int): Int = ((opacity * 2 / 3) shl 24) or 0x161b22
+    // ── 淡灰色槽位背景色 ────────────────────────────────────────
+    /** 将 alpha 组合为淡灰色背景 ARGB（用于槽位） */
+    fun slotBgColor(opacity: Int): Int = ((opacity) shl 24) or 0x8B8B8B
 
     // ── 维度图标尺寸 ──────────────────────────────────────────
     const val DIM_BADGE_ICON_SIZE = 10    // 维度图标渲染大小（像素，与护甲槽位一致）
