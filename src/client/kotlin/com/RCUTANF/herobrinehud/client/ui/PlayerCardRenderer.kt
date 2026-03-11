@@ -294,26 +294,25 @@ object PlayerCardRenderer {
     //  护甲行（护甲值 + 四个护甲槽位）
     // ──────────────────────────────────────────────────────────────
 
-    // 新增：竖向布局专用 - 在卡片中央显示心形+血量（左）和盔甲图标+盔甲值（右）
+    // 新增：竖向布局专用 - 在卡片中央显示心形图标+血量（左）和盔甲图标+盔甲值（右）
     private fun renderHealthAndArmorValuesVertical(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
+        val iconSize = L.HEART_ICON_SIZE
 
-        // 左侧：心形 + 血量文本
-        val heart = "❤"
+        // 左侧：心形图标 + 血量文本
         val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
-        val heartColor = (opacity shl 24) or 0xFF5555
         val leftX = cardX + L.HEALTH_X_OFFSET
         
-        // 渲染心形图标
-        ctx.drawString(font, heart, leftX, y, heartColor, true)
+        // 渲染心形图标（使用游戏内的心形纹理）
+        val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
+        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, y, iconSize, iconSize)
+        
         // 血量文本紧随其后
-        val healthTextX = leftX + font.width(heart) + L.ICON_TEXT_GAP
+        val healthTextX = leftX + iconSize + L.ICON_TEXT_GAP
         ctx.drawString(font, healthText, healthTextX, y, (opacity shl 24) or 0xFFFFFF, false)
 
         // 右侧：盔甲图标 + 盔甲值
         val armorValueText = "${player.armor}"
-        val armorTextWidth = font.width(armorValueText)
-        val iconSize = L.ARMOR_ICON_SIZE
         
         // 盔甲图标位置（右侧对齐）
         val armorIconX = cardX + L.ARMOR_X_OFFSET
@@ -383,13 +382,15 @@ object PlayerCardRenderer {
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  主副手图标
+    //  主副手图标（竖向排列）
     // ──────────────────────────────────────────────────────────────
 
     private fun renderHandIcons(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val eq = player.equipment
+        // 主手在上方
         renderItemSlot(ctx, eq.mainHand, x, y, L.HAND_SLOT_SIZE, opacity)
-        renderItemSlot(ctx, eq.offHand, x + L.HAND_SLOT_SIZE + L.EFFECT_BADGE_GAP, y, L.HAND_SLOT_SIZE, opacity)
+        // 副手在下方（紧贴主手）
+        renderItemSlot(ctx, eq.offHand, x, y + L.HAND_SLOT_SIZE + L.HAND_GAP, L.HAND_SLOT_SIZE, opacity)
     }
 
     // ──────────────────────────────────────────────────────────────

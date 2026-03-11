@@ -25,10 +25,10 @@ object CardLayout {
     const val AVATAR_X_OFFSET = 2     // 头像在卡片内的 X 偏移
     const val AVATAR_Y_OFFSET = 2     // 头像在卡片内的 Y 偏移（顶部）
     
-    const val HAND_SLOT_SIZE = 14     // 主副手槽位大小
-    const val HAND_X_OFFSET = 22      // 主副手起始 X（头像右侧）
-    const val HAND_Y_OFFSET = 2       // 主副手 Y 偏移（与头像对齐）
-    const val HAND_GAP = 2            // 主副手之间的间距
+    const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
+    const val HAND_X_OFFSET = 20      // 主副手起始 X（头像右侧）
+    const val HAND_Y_OFFSET = 2       // 主手 Y 偏移（与头像顶部对齐）
+    const val HAND_GAP = 0            // 主副手之间的间距（紧贴）
 
     // ── 名称区域 ──────────────────────────────────────────────
     const val NAME_Y_OFFSET = 20      // 名称文字在卡片内的 Y 偏移（头像下方）
