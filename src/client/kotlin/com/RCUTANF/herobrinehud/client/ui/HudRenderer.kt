@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics
  *
  * 在游戏画面上绘制玩家信息卡片。
  * 玩家按 uuid 独立分配到 LEFT / RIGHT 侧，与队伍无关。
+ * 布局：左下角从左往右排列，右下角从左往右排列但最右边贴屏幕右下角
  */
 object HudRenderer : HudRenderCallback {
 
@@ -26,28 +27,34 @@ object HudRenderer : HudRenderCallback {
 
         val client = Minecraft.getInstance()
         val screenWidth = client.window.guiScaledWidth
+        val screenHeight = client.window.guiScaledHeight
         val opacity = (HudConfig.data.hudOpacity * 255).toInt().coerceIn(0, 255)
 
-        // ──────────── 渲染左侧玩家 ────────────
+        // ──────────── 渲染左下角玩家（从左往右） ────────────
         val leftPlayers = HudSelectionState.getPlayersBySide(DisplaySide.LEFT)
-        var leftY = HudConfig.data.cardStartY
+        var leftX = L.MARGIN
+        val leftY = screenHeight - L.CARD_HEIGHT - L.MARGIN
         for (player in leftPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
-            PlayerCardRenderer.renderCard(drawContext, player, L.MARGIN, leftY, teamName, teamColor, opacity)
-            leftY += L.CARD_HEIGHT + L.CARD_GAP
+            PlayerCardRenderer.renderCard(drawContext, player, leftX, leftY, teamName, teamColor, opacity)
+            leftX += L.CARD_WIDTH + L.CARD_GAP
         }
 
-        // ──────────── 渲染右侧玩家 ────────────
+        // ──────────── 渲染右下角玩家（从左往右，但最右边贴右下角） ────────────
         val rightPlayers = HudSelectionState.getPlayersBySide(DisplaySide.RIGHT)
-        var rightY = HudConfig.data.cardStartY
+        val rightY = screenHeight - L.CARD_HEIGHT - L.MARGIN
+        // 计算右侧卡片组的总宽度
+        val rightTotalWidth = rightPlayers.size * L.CARD_WIDTH + (rightPlayers.size - 1) * L.CARD_GAP
+        // 从右边开始计算起始X位置
+        var rightX = screenWidth - rightTotalWidth - L.MARGIN
         for (player in rightPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
             PlayerCardRenderer.renderCard(
                 drawContext, player,
-                screenWidth - L.CARD_WIDTH - L.MARGIN, rightY,
+                rightX, rightY,
                 teamName, teamColor, opacity
             )
-            rightY += L.CARD_HEIGHT + L.CARD_GAP
+            rightX += L.CARD_WIDTH + L.CARD_GAP
         }
     }
 
