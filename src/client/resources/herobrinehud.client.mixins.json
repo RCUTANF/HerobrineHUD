@@ -4,6 +4,7 @@
   "package": "com.RCUTANF.herobrinehud.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ChatComponentMixin",
     "MinecraftClientMixin"
   ],
   "injectors": {
