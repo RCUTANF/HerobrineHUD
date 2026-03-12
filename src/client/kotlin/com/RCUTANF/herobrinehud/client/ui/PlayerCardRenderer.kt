@@ -317,21 +317,19 @@ object PlayerCardRenderer {
             player.name
         }
         
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        // 将文本居中对齐到卡片中心（卡片宽度 = L.CARD_WIDTH）
-        val textWidth = font.width(displayName)
-        val textX = (L.CARD_WIDTH / scale / 2f - textWidth / 2f).toInt()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        ctx.drawString(font, displayName, textX, 0, nameColor, false)
-        pose.popMatrix()
+        // 使用通用 pose 辅助简化缩放与居中逻辑
+        withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
+            val textWidth = font.width(displayName)
+            val textX = (L.CARD_WIDTH / scale / 2f - textWidth / 2f).toInt()
+            ctx.drawString(font, displayName, textX, 0, nameColor, false)
+        }
     }
 
     // ──────────────────────────────────────────────────────────────
     //  队伍名称
     // ──────────────────────────────────────────────────────────────
 
+    @Suppress("unused")
     private fun renderTeamName(ctx: GuiGraphics, teamName: String, teamColor: String, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val rgb = try {
@@ -341,16 +339,14 @@ object PlayerCardRenderer {
         }
         val teamColorInt = (opacity shl 24) or rgb
         val scale = 0.5f
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        // 头像中心 X = x + L.AVATAR_SIZE / 2
-        // 将缩放后的文本中心对齐到头像中心
-        val textWidth = font.width(teamName)
-        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
-        pose.popMatrix()
+
+        withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
+            // 头像中心 X = x + L.AVATAR_SIZE / 2
+            // 将缩放后的文本中心对齐到头像中心
+            val textWidth = font.width(teamName)
+            val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
+            ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
+        }
 
     }
 
@@ -367,41 +363,39 @@ object PlayerCardRenderer {
         }
         val teamColorInt = (opacity shl 24) or rgb
         val scale = 0.6f
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        // 将文本居中对齐到卡片中心
-        val textWidth = font.width(teamName)
-        val textX = (L.CARD_WIDTH / 2f - textWidth * scale / 2f).toInt()
-        pose.translate(cardX.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
-        pose.popMatrix()
+
+        withPose(ctx, cardX.toFloat(), y.toFloat(), scale, scale) {
+            // 将文本居中对齐到卡片中心
+            val textWidth = font.width(teamName)
+            val textX = (L.CARD_WIDTH / 2f - textWidth * scale / 2f).toInt()
+            ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
+        }
     }
 
     // ──────────────────────────────────────────────────────────────
     //  快捷键编号
     // ──────────────────────────────────────────────────────────────
 
+    @Suppress("unused")
     private fun renderHotkeyNumber(ctx: GuiGraphics, hotkeyNumber: Int, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val hotkeyText = "[$hotkeyNumber]"
         val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
         val scale = 0.5f
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        // 将缩放后的文本中心对齐到头像中心
-        val textWidth = font.width(hotkeyText)
-        val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
-        pose.popMatrix()
+
+        withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
+            // 将缩放后的文本中心对齐到头像中心
+            val textWidth = font.width(hotkeyText)
+            val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
+            ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
+        }
     }
 
     // ──────────────────────────────────────────────────────────────
     //  生命值条
     // ──────────────────────────────────────────────────────────────
 
+    @Suppress("unused", "DEPRECATION")
     private fun renderHealthBar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val healthPercent = if (player.maxHealth > 0)
             (player.health / player.maxHealth).coerceIn(0.0, 1.0) else 0.0
@@ -432,34 +426,23 @@ object PlayerCardRenderer {
         val iconSize = L.HEART_ICON_SIZE
         val scale = 0.6f  // 缩放到60%大小
         
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate(cardX.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        
-        // 左侧：心形图标 + 血量文本
-        val healthText = "${player.health.toInt()}"
-        val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
-        val leftX = 2
-        
-        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
-        ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+        // 使用 withPose 简化矩阵管理
+        withPose(ctx, cardX.toFloat(), y.toFloat(), scale, scale) {
+            // 左侧：心形图标 + 血量文本
+            val healthText = "${player.health.toInt()}"
+            val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
+            val leftX = 2
 
-        // 右侧：盔甲图标 + 盔甲值
-        val armorValueText = "${player.armor}"
-        val armorIconX = 26  // 右侧位置
-        
-        // 临时保存当前矩阵状态
-        pose.popMatrix()
-        pose.pushMatrix()
-        pose.translate(cardX.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        
-        // 渲染盔甲图标（不带灰色底纹）
-        renderArmorIconOnly(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
-        ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
-        
-        pose.popMatrix()
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
+            ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+
+            // 右侧：盔甲图标 + 盔甲值
+            val armorValueText = "${player.armor}"
+            val armorIconX = 26  // 右侧位置
+            // 渲染盔甲图标（不带灰色底纹）
+            renderArmorIconOnly(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
+            ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+        }
     }
 
     // 新增：竖向布局专用 - 居中渲染四个护甲槽位
@@ -511,28 +494,22 @@ object PlayerCardRenderer {
             val iconId = getEffectIcon(effect.identifier)
 
             // 使用 blitSprite 渲染效果图标
-            val pose = ctx.pose()
-            pose.pushMatrix()
-            val scale = L.EFFECT_BADGE_SIZE / 18f  // 原生图标大小是 18x18
-            pose.translate(bx.toFloat(), y.toFloat())
-            pose.scale(scale, scale)
-            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, iconId, 0, 0, 18, 18)
-            pose.popMatrix()
+            withPose(ctx, bx.toFloat(), y.toFloat(), L.EFFECT_BADGE_SIZE / 18f, L.EFFECT_BADGE_SIZE / 18f) {
+                ctx.blitSprite(RenderPipelines.GUI_TEXTURED, iconId, 0, 0, 18, 18)
+            }
 
             // 右上角渲染罗马数字等级（amplifier >= 1 时显示，即 II 级及以上）
             if (effect.amplifier >= 1) {
                 val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
                 // 缩小罗马数字渲染
-                pose.pushMatrix()
                 val numScale = 0.35f  // 进一步缩小罗马数字
                 // 计算右上角位置
                 val romanWidth = (font.width(roman) * numScale).toInt()
                 val romanX = bx + L.EFFECT_BADGE_SIZE - romanWidth
                 val romanY = y - 1
-                pose.translate(romanX.toFloat(), romanY.toFloat())
-                pose.scale(numScale, numScale)
-                ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
-                pose.popMatrix()
+                withPose(ctx, romanX.toFloat(), romanY.toFloat(), numScale, numScale) {
+                    ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
+                }
             }
         }
     }
@@ -580,6 +557,7 @@ object PlayerCardRenderer {
      * 渲染一个小尺寸物品槽位（SLOT_SIZE x SLOT_SIZE）
      * 使用矩阵缩放将 16px 图标缩小
      */
+    @Suppress("unused")
     private fun renderSmallItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         // 背景
         ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
@@ -588,39 +566,32 @@ object PlayerCardRenderer {
         val stack = resolveItemStack(itemId) ?: return
 
         // 缩放矩阵渲染
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        val scale = size / 16f
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        try {
-            ctx.renderItem(stack, 0, 0)
-        } catch (_: Exception) {
-            // 物品渲染异常时静默忽略
+        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
+            try {
+                ctx.renderItem(stack, 0, 0)
+            } catch (_: Exception) {
+                // 物品渲染异常时静默忽略
+            }
         }
-        pose.popMatrix()
     }
 
     /**
      * 渲染一个标准（14px）物品槽位，用于主副手
      */
+    @Suppress("unused")
     private fun renderItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
 
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
 
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        val scale = size / 16f
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        try {
-            ctx.renderItem(stack, 0, 0)
-        } catch (_: Exception) {
-            // 物品渲染异常时静默忽略
+        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
+            try {
+                ctx.renderItem(stack, 0, 0)
+            } catch (_: Exception) {
+                // 物品渲染异常时静默忽略
+            }
         }
-        pose.popMatrix()
     }
 
     /**
@@ -630,39 +601,20 @@ object PlayerCardRenderer {
         // 背景
         ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
 
-        // 使用缩放绘制更细的白色外框（0.5 像素宽）
-        val borderColor = (opacity shl 24) or 0xFFFFFF
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(0.5f, 0.5f)
-        
-        val scaledSize = (size * 2)
-        // 上边框
-        ctx.fill(0, 0, scaledSize, 1, borderColor)
-        // 下边框
-        ctx.fill(0, scaledSize - 1, scaledSize, scaledSize, borderColor)
-        // 左边框
-        ctx.fill(0, 0, 1, scaledSize, borderColor)
-        // 右边框
-        ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
-        
-        pose.popMatrix()
+        // 绘制细边框
+        drawThinBorder(ctx, x, y, size, opacity)
 
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
 
         // 缩放矩阵渲染物品
-        pose.pushMatrix()
-        val scale = size / 16f
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        try {
-            ctx.renderItem(stack, 0, 0)
-        } catch (_: Exception) {
-            // 物品渲染异常时静默忽略
+        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
+            try {
+                ctx.renderItem(stack, 0, 0)
+            } catch (_: Exception) {
+                // 物品渲染异常时静默忽略
+            }
         }
-        pose.popMatrix()
     }
 
     /**
@@ -672,59 +624,37 @@ object PlayerCardRenderer {
         // 背景
         ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
 
-        // 使用缩放绘制更细的白色外框（0.5 像素宽）
-        val borderColor = (opacity shl 24) or 0xFFFFFF
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(0.5f, 0.5f)
-        
-        val scaledSize = (size * 2)
-        // 上边框
-        ctx.fill(0, 0, scaledSize, 1, borderColor)
-        // 下边框
-        ctx.fill(0, scaledSize - 1, scaledSize, scaledSize, borderColor)
-        // 左边框
-        ctx.fill(0, 0, 1, scaledSize, borderColor)
-        // 右边框
-        ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
-        
-        pose.popMatrix()
+        // 绘制细边框
+        drawThinBorder(ctx, x, y, size, opacity)
 
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
 
-        pose.pushMatrix()
-        val scale = size / 16f
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        try {
-            ctx.renderItem(stack, 0, 0)
-        } catch (_: Exception) {
-            // 物品渲染异常时静默忽略
+        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
+            try {
+                ctx.renderItem(stack, 0, 0)
+            } catch (_: Exception) {
+                // 物品渲染异常时静默忽略
+            }
         }
-        pose.popMatrix()
     }
 
     /**
      * 渲染盔甲图标（不带灰色底纹）
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun renderArmorIconOnly(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
 
         // 缩放矩阵渲染（不绘制背景）
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        val scale = size / 16f
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(scale, scale)
-        try {
-            ctx.renderItem(stack, 0, 0)
-        } catch (_: Exception) {
-            // 物品渲染异常时静默忽略
+        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
+            try {
+                ctx.renderItem(stack, 0, 0)
+            } catch (_: Exception) {
+                // 物品渲染异常时静默忽略
+            }
         }
-        pose.popMatrix()
     }
 
     /**
@@ -773,5 +703,43 @@ object PlayerCardRenderer {
         ctx.fill(x - borderWidth, y, x, y + L.AVATAR_SIZE, highlightColor)
         // 右边
         ctx.fill(x + L.AVATAR_SIZE, y, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE, highlightColor)
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Pose 与 边框 辅助函数（用于减少重复的 push/pop 与缩放代码）
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 在指定的 transform 下执行绘制操作（会自动 push/pop 矩阵）
+     */
+    private inline fun withPose(ctx: GuiGraphics, tx: Float, ty: Float, sx: Float, sy: Float, block: (GuiGraphics) -> Unit) {
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(tx, ty)
+        pose.scale(sx, sy)
+        try {
+            block(ctx)
+        } finally {
+            pose.popMatrix()
+        }
+    }
+
+    /**
+     * 绘制细白色边框（通过 0.5 倍缩放实现更细的边框线），接收任意大小的槽位
+     */
+    private fun drawThinBorder(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
+        val borderColor = (opacity shl 24) or 0xFFFFFF
+        // 使用缩放到 0.5 来绘制更细的边框
+        withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
+            val scaledSize = size * 2
+            // 上边框
+            ctx.fill(0, 0, scaledSize, 1, borderColor)
+            // 下边框
+            ctx.fill(0, scaledSize - 1, scaledSize, scaledSize, borderColor)
+            // 左边框
+            ctx.fill(0, 0, 1, scaledSize, borderColor)
+            // 右边框
+            ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
+        }
     }
 }
