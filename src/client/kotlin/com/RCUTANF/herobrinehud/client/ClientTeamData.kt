@@ -143,18 +143,24 @@ object ClientTeamData {
                     val data = json.decodeFromString<TeamUpdateData>(jsonStr)
                     teams[data.team.name] = data.team
                     LOGGER.debug("队伍新增: {}", data.team.name)
+
+                    HudSelectionState.updateHotkeyMappings()
                 }
 
                 UpdateType.TEAM_REMOVED -> {
                     val data = json.decodeFromString<TeamRemovedData>(jsonStr)
                     teams.remove(data.teamName)
                     LOGGER.debug("队伍移除: {}", data.teamName)
+
+                    HudSelectionState.updateHotkeyMappings()
                 }
 
                 UpdateType.TEAM_MODIFIED -> {
                     val data = json.decodeFromString<TeamUpdateData>(jsonStr)
                     teams[data.team.name] = data.team
                     LOGGER.debug("队伍修改: {}", data.team.name)
+
+                    HudSelectionState.updateHotkeyMappings()
                 }
 
                 UpdateType.PLAYER_JOINED_TEAM -> {
@@ -165,6 +171,8 @@ object ClientTeamData {
                             teamInfo.players.add(data.player)
                         }
                         LOGGER.debug("玩家 {} 加入队伍 {}", data.player.name, data.teamName)
+
+                        HudSelectionState.updateHotkeyMappings()
                     }
                 }
 
@@ -173,6 +181,8 @@ object ClientTeamData {
                     val teamInfo = teams[data.teamName]
                     teamInfo?.players?.removeIf { it.name == data.playerName }
                     LOGGER.debug("玩家 {} 离开队伍 {}", data.playerName, data.teamName)
+
+                    HudSelectionState.updateHotkeyMappings()
                 }
 
                 UpdateType.PLAYER_DATA_UPDATED, UpdateType.PLAYER_JOINED_SERVER -> {
@@ -186,6 +196,7 @@ object ClientTeamData {
                             teamInfo.players.add(data.player)
                         }
                         LOGGER.debug("玩家 {} 数据已更新", data.player.name)
+                        HudSelectionState.updateHotkeyMappings()
                     }
                 }
 
@@ -205,6 +216,7 @@ object ClientTeamData {
                             break
                         }
                     }
+                    HudSelectionState.updateHotkeyMappings()
                 }
 
                 else -> {
