@@ -31,15 +31,16 @@ object PlayerCardRenderer {
     /**
      * 渲染完整的玩家卡片（竖向布局）
      *
-     * @param ctx       GuiGraphics 上下文
-     * @param player    玩家数据
-     * @param cardX     卡片左上角 X
-     * @param cardY     卡片左上角 Y
-     * @param teamName  玩家所属队伍名称
-     * @param teamColor 队伍颜色（HEX 格式，如 "#FF5555"）
-     * @param opacity   不透明度 (0-255)
+     * @param ctx          GuiGraphics 上下文
+     * @param player       玩家数据
+     * @param cardX        卡片左上角 X
+     * @param cardY        卡片左上角 Y
+     * @param teamName     玩家所属队伍名称
+     * @param teamColor    队伍颜色（HEX 格式，如 "#FF5555"）
+     * @param opacity      不透明度 (0-255)
+     * @param hotkeyNumber 快捷键编号 (1-9, 0)，null 表示无快捷键
      */
-    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int) {
+    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int? = null) {
         val config = HudConfig.data
 
         // 卡片背景：使用维度对应方块的纹理
@@ -97,9 +98,13 @@ object PlayerCardRenderer {
             val effectsX = cardX + 2
             val availableWidth = L.CARD_WIDTH - 4
             renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
+            // 当有效果时，在卡片右下角绘制快捷键编号
+            if (hotkeyNumber != null) {
+                renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, cardX, cardY, opacity)
+            }
         } else {
-            // 当没有效果时，在效果徽章的位置绘制队伍名称
-            renderTeamNameAtEffectPosition(ctx, teamName, teamColor, cardX, effectsY, opacity)
+            // 当没有效果时，在效果徽章的位置绘制队伍名称（带快捷键编号前缀）
+            renderTeamNameAtEffectPosition(ctx, teamName, teamColor, cardX, effectsY, opacity, hotkeyNumber)
         }
     }
 
@@ -353,8 +358,9 @@ object PlayerCardRenderer {
     /**
      * 在效果徽章位置渲染队伍名称（当没有效果时）
      * 使用队伍颜色，居中显示
+     * 如果有快捷键编号，则在队伍名称前面添加编号
      */
-    private fun renderTeamNameAtEffectPosition(ctx: GuiGraphics, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int) {
+    private fun renderTeamNameAtEffectPosition(ctx: GuiGraphics, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int, hotkeyNumber: Int? = null) {
         val font = Minecraft.getInstance().font
         val rgb = try {
             teamColor.trimStart('#').toInt(16) and 0xFFFFFF
@@ -362,13 +368,30 @@ object PlayerCardRenderer {
             0xAAAAAA
         }
         val teamColorInt = (opacity shl 24) or rgb
+        val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
         val scale = 0.6f
 
         withPose(ctx, cardX.toFloat(), y.toFloat(), scale, scale) {
+            // 构建显示文本：如果有快捷键编号，则添加前缀
+            val displayText = if (hotkeyNumber != null) {
+                "[$hotkeyNumber] $teamName"
+            } else {
+                teamName
+            }
+            
             // 将文本居中对齐到卡片中心
-            val textWidth = font.width(teamName)
+            val textWidth = font.width(displayText)
             val textX = (L.CARD_WIDTH / 2f - textWidth * scale / 2f).toInt()
-            ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
+            
+            // 如果有快捷键编号，分段渲染（编号用黄色，队伍名用队伍颜色）
+            if (hotkeyNumber != null) {
+                val hotkeyText = "[$hotkeyNumber] "
+                val hotkeyWidth = font.width(hotkeyText)
+                ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
+                ctx.drawString(font, teamName, textX + hotkeyWidth, 0, teamColorInt, false)
+            } else {
+                ctx.drawString(font, displayText, textX, 0, teamColorInt, false)
+            }
         }
     }
 
@@ -376,18 +399,32 @@ object PlayerCardRenderer {
     //  快捷键编号
     // ──────────────────────────────────────────────────────────────
 
-    @Suppress("unused")
-    private fun renderHotkeyNumber(ctx: GuiGraphics, hotkeyNumber: Int, x: Int, y: Int, opacity: Int) {
+    /**
+     * 在卡片右下角渲染快捷键编号（当有效果时使用）
+     *
+     * @param ctx          GuiGraphics 上下文
+     * @param hotkeyNumber 快捷键编号 (1-9, 0)
+     * @param cardX        卡片左上角 X
+     * @param cardY        卡片左上角 Y
+     * @param opacity      不透明度 (0-255)
+     */
+    private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphics, hotkeyNumber: Int, cardX: Int, cardY: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val hotkeyText = "[$hotkeyNumber]"
         val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
         val scale = 0.5f
+        
+        // 计算右下角位置（留出一些边距）
+        val margin = 2
+        val textWidth = font.width(hotkeyText)
+        val scaledTextWidth = (textWidth * scale).toInt()
+        val scaledTextHeight = (8 * scale).toInt()  // 字体高度约为 8
+        
+        val x = cardX + L.CARD_WIDTH - scaledTextWidth - margin
+        val y = cardY + L.CARD_HEIGHT - scaledTextHeight - margin
 
         withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
-            // 将缩放后的文本中心对齐到头像中心
-            val textWidth = font.width(hotkeyText)
-            val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
-            ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
+            ctx.drawString(font, hotkeyText, 0, 0, hotkeyColor, true)  // 使用阴影增强可读性
         }
     }
 

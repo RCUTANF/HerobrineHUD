@@ -36,7 +36,9 @@ object HudRenderer : HudRenderCallback {
         val leftY = screenHeight - L.CARD_HEIGHT - L.MARGIN
         for (player in leftPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
-            PlayerCardRenderer.renderCard(drawContext, player, leftX, leftY, teamName, teamColor, opacity)
+            // 从 ClientTeamData 获取快捷键编号
+            val hotkeyNumber = ClientTeamData.getPlayerHotkey(player.uuid).takeIf { it >= 0 }
+            PlayerCardRenderer.renderCard(drawContext, player, leftX, leftY, teamName, teamColor, opacity, hotkeyNumber)
             leftX += L.CARD_WIDTH + L.CARD_GAP
         }
 
@@ -49,10 +51,12 @@ object HudRenderer : HudRenderCallback {
         var rightX = screenWidth - rightTotalWidth - L.MARGIN
         for (player in rightPlayers) {
             val (teamName, teamColor) = findTeamInfo(player)
+            // 从 ClientTeamData 获取快捷键编号
+            val hotkeyNumber = ClientTeamData.getPlayerHotkey(player.uuid).takeIf { it >= 0 }
             PlayerCardRenderer.renderCard(
                 drawContext, player,
                 rightX, rightY,
-                teamName, teamColor, opacity
+                teamName, teamColor, opacity, hotkeyNumber
             )
             rightX += L.CARD_WIDTH + L.CARD_GAP
         }
