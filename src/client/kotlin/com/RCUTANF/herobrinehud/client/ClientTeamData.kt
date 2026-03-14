@@ -1,7 +1,11 @@
 package com.RCUTANF.herobrinehud.client
 
+import com.RCUTANF.herobrinehud.client.animation.PlayerAnimationManager
+import com.RCUTANF.herobrinehud.client.animation.PlayerChangeAnimationDispatcher
+import com.RCUTANF.herobrinehud.client.event.PlayerChangeDetector
 import com.RCUTANF.herobrinehud.client.ui.HudSelectionState
 import com.RCUTANF.herobrinehud.data.Equipment
+import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.network.*
 import kotlinx.serialization.json.Json
@@ -25,6 +29,9 @@ object ClientTeamData {
 
     /** 客户端本地队伍数据缓存 */
     private val teams = ConcurrentHashMap<String, TeamInfo>()
+
+    /** 玩家数据快照缓存（用于变化检测）UUID -> PlayerInfo */
+    private val playerSnapshots = ConcurrentHashMap<String, PlayerInfo>()
 
     /** 是否已收到过全量数据 */
     var isSynced: Boolean = false
@@ -190,11 +197,25 @@ object ClientTeamData {
                     val teamInfo = teams[data.teamName]
                     if (teamInfo != null) {
                         val idx = teamInfo.players.indexOfFirst { it.name == data.player.name }
+                        
+                        // 获取旧的玩家数据快照
+                        val oldPlayer = playerSnapshots[data.player.uuid]
+                        
                         if (idx >= 0) {
                             teamInfo.players[idx] = data.player
                         } else {
                             teamInfo.players.add(data.player)
                         }
+                        
+                        // 检测变化并触发动画
+                        val changeEvents = PlayerChangeDetector.detectChanges(oldPlayer, data.player)
+                        if (changeEvents.isNotEmpty()) {
+                            PlayerChangeAnimationDispatcher.dispatchChangeEvents(changeEvents)
+                        }
+                        
+                        // 更新快照
+                        playerSnapshots[data.player.uuid] = data.player.copy()
+                        
                         LOGGER.debug("玩家 {} 数据已更新", data.player.name)
                         HudSelectionState.updateHotkeyMappings()
                     }
@@ -236,6 +257,8 @@ object ClientTeamData {
         isSynced = false
         playerHotkeyMap.clear()
         spectatingPlayerUuid = null
+        playerSnapshots.clear()
+        PlayerAnimationManager.clearAll()
         LOGGER.info("客户端队伍数据缓存已清空")
     }
 }

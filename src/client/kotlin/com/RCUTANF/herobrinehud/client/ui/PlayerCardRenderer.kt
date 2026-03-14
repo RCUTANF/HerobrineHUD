@@ -1,5 +1,6 @@
 package com.RCUTANF.herobrinehud.client.ui
 
+import com.RCUTANF.herobrinehud.client.animation.PlayerAnimationManager
 import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.client.ClientTeamData
@@ -105,6 +106,19 @@ object PlayerCardRenderer {
         } else {
             // 当没有效果时，在效果徽章的位置绘制队伍名称（带快捷键编号前缀）
             renderTeamNameAtEffectPosition(ctx, teamName, teamColor, cardX, effectsY, opacity, hotkeyNumber)
+        }
+        
+        // 7. 渲染玩家变化动画（在所有内容之上）
+        renderPlayerAnimations(ctx, player, cardX, cardY, opacity)
+    }
+    
+    /**
+     * 渲染玩家的所有活跃动画
+     */
+    private fun renderPlayerAnimations(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, opacity: Int) {
+        val animations = PlayerAnimationManager.getAnimations(player.uuid)
+        animations.forEach { animation ->
+            animation.render(ctx, cardX, cardY, opacity)
         }
     }
 
