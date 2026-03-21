@@ -250,29 +250,32 @@ object PlayerCardRenderer {
     private fun renderAvatar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val client = Minecraft.getInstance()
 
-        // 优先使用服务端下发的头像 URL（AvatarTextureCache 异步下载并注册）
-        val avatarTexture: Identifier? = player.avatar?.let { AvatarTextureCache.getTexture(it) }
-
-        if (avatarTexture != null) {
-            blitHead(ctx, avatarTexture, x, y)
-            return
-        }
-
-        // 降级：尝试从本地 SkinManager 获取（适用于头像 URL 尚未就绪，或玩家正在本地联机）
+        // 优先：从本地 SkinManager 获取
         val uuid = runCatching { UUID.fromString(player.uuid) }.getOrNull()
         if (uuid != null) {
             try {
-                val skinTexture = client.skinManager
-                    .createLookup(GameProfile(uuid, player.name), false)
-                    .get()
-                    .body()
-                    .texturePath()
-                blitHead(ctx, skinTexture, x, y)
+                val player = client.level?.getPlayerByUUID(uuid)
+                val skinTexture = player?.let {
+                    client.skinManager
+                        .createLookup(it.gameProfile, false)
+                }
+                    ?.get()
+                    ?.body()
+                    ?.texturePath()
+                skinTexture?.let { blitHead(ctx, it, x, y) }
                 return
             } catch (_: Exception) {
                 // 皮肤未加载，继续 fallback
             }
         }
+
+        // 降级使用服务端下发的头像 URL（AvatarTextureCache 异步下载并注册）
+//        val avatarTexture: Identifier? = player.avatar?.let { AvatarTextureCache.getTexture(it) }
+//
+//        if (avatarTexture != null) {
+//            blitHead(ctx, avatarTexture, x, y)
+//            return
+//        }
 
         // 最终 Fallback：纯色方块 + 名称首字母
         val font = client.font
