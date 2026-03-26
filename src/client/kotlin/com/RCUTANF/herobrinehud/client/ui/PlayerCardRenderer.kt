@@ -254,10 +254,10 @@ object PlayerCardRenderer {
         val uuid = runCatching { UUID.fromString(player.uuid) }.getOrNull()
         if (uuid != null) {
             try {
-                val player = client.level?.getPlayerByUUID(uuid)
+                val player = client.connection?.getPlayerInfo(uuid)
                 val skinTexture = player?.let {
                     client.skinManager
-                        .createLookup(it.gameProfile, false)
+                        .createLookup(player.profile, false)
                 }
                     ?.get()
                     ?.body()
