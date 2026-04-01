@@ -19,6 +19,7 @@ data class PlayerInfo(
     var gamemode: String,                              // 游戏模式（生存、创造、冒险等）
     var health: Double = 20.0,                         // 当前生命值
     var maxHealth: Double = 20.0,                      // 最大生命值
+    var foodLevel: Int = 20,                           // 饱食度（0-20）
     var armor: Int = 0,                                // 护甲值
     var isAlive: Boolean = true,                       // 存活状态
     var dimension: String? = null,                     // 所在维度

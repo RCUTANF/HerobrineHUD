@@ -84,6 +84,13 @@ object PlayerDataCallback {
         }
     }
 
+    /** 玩家饱食度变化时触发 */
+    val FOOD_LEVEL_CHANGED: Event<FoodLevelChanged> = EventFactory.createArrayBacked(FoodLevelChanged::class.java) { listeners ->
+        FoodLevelChanged { player ->
+            listeners.forEach { it.onFoodLevelChanged(player) }
+        }
+    }
+
     // ──────────────── 加入/离开服务器 ────────────────
 
     /** 玩家加入服务器时触发（网络连接建立，但数据可能未加载完成） */
@@ -148,6 +155,10 @@ object PlayerDataCallback {
          * @param duration 冷却时长（tick），为 0 表示冷却已结束
          */
         fun onCooldownChanged(player: ServerPlayer, group: Identifier, duration: Int)
+    }
+
+    fun interface FoodLevelChanged {
+        fun onFoodLevelChanged(player: ServerPlayer)
     }
 
     fun interface PlayerJoinedServer {

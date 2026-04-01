@@ -4,6 +4,7 @@
   "package": "com.RCUTANF.herobrinehud.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "FoodDataMixin",
     "LivingEntityMixin",
     "ScoreboardMixin",
     "ServerItemCooldownsMixin",

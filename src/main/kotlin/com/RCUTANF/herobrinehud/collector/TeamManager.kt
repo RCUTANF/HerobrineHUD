@@ -148,6 +148,13 @@ object TeamManager {
             }
         })
 
+        // 饱食度变化
+        PlayerDataCallback.FOOD_LEVEL_CHANGED.register(PlayerDataCallback.FoodLevelChanged { player ->
+            updateAndNotify(player) { info ->
+                info.foodLevel = player.foodData.foodLevel
+            }
+        })
+
         // 游戏模式变化
         PlayerDataCallback.GAMEMODE_CHANGED.register(PlayerDataCallback.GamemodeChanged { player, _, newMode ->
             updateAndNotify(player) { info ->
@@ -257,6 +264,7 @@ object TeamManager {
                 info.gamemode = "unknown"
                 info.health = 0.0
                 info.isAlive = false
+                info.foodLevel = 0
                 info.armor = 0
                 info.dimension = null
                 info.effects.clear()
@@ -378,6 +386,7 @@ object TeamManager {
             gamemode = player.gameMode.gameModeForPlayer.getName(),
             health = player.health.toDouble(),
             maxHealth = player.maxHealth.toDouble(),
+            foodLevel = player.foodData.foodLevel,
             armor = player.armorValue,
             isAlive = player.isAlive,
             dimension = player.level().dimension().identifier().toString(),
@@ -400,6 +409,7 @@ object TeamManager {
             gamemode = "unknown",
             health = 0.0,
             maxHealth = 20.0,
+            foodLevel = 0,
             isAlive = false
         )
     }
