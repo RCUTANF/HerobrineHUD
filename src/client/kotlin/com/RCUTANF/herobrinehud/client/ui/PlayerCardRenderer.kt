@@ -29,6 +29,17 @@ object PlayerCardRenderer {
 
     private val L = CardLayout
 
+    // ──────────────────────────────────────────────────────────────
+    // 新增：Neo-Pixel 配色常量 (RGB)
+    // ──────────────────────────────────────────────────────────────
+    private const val COLOR_PANEL_BG = 0x171C24
+    private const val COLOR_LINE = 0x3B4656
+    private const val COLOR_TEXT = 0xEEF3F8
+    private const val COLOR_HP = 0xFF5C5C
+    private const val COLOR_ARMOR = 0xD7DDE7
+    private const val COLOR_HEADER_BG = 0x0D1015
+    private const val COLOR_HEADER_BORDER = 0x2E3744
+
     /**
      * 渲染完整的玩家卡片（竖向布局）
      *
@@ -45,7 +56,7 @@ object PlayerCardRenderer {
         val config = HudConfig.data
 
         // 卡片背景：使用维度对应方块的纹理
-        renderCardBackground(ctx, player, cardX, cardY, opacity)
+        renderCardBackground(ctx, cardX, cardY, teamColor, opacity)
 
         // 竖向布局：
         // 1. 顶部：头像（左） + 主副手物品（右）
@@ -127,96 +138,43 @@ object PlayerCardRenderer {
     // ──────────────────────────────────────────────────────────────
 
     /**
-     * 渲染卡片背景，使用维度对应方块的纹理
-     * 纹理高度根据玩家血量百分比动态调整，从下往上填充
+     * 渲染卡片背景
      * 
      * @param ctx    GuiGraphics 上下文
-     * @param player 玩家数据
      * @param cardX  卡片左上角 X
      * @param cardY  卡片左上角 Y
+     * @param teamColor 队伍颜色（HEX 格式）
      * @param opacity 不透明度 (0-255)
      */
-    private fun renderCardBackground(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, opacity: Int) {
-        val dim = player.dimension
-        
-        // 如果没有维度信息，使用纯色背景
-        if (dim == null) {
-            ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
-            drawCardBorder(ctx, cardX, cardY, opacity)
-            return
+    private fun renderCardBackground(ctx: GuiGraphics, cardX: Int, cardY: Int, teamColor: String, opacity: Int) {
+        val alpha = (opacity * 0.92f).toInt().coerceIn(0, 255) // rgba(23, 28, 36, 0.92)
+        val bgColor = (alpha shl 24) or COLOR_PANEL_BG
+
+        // 绘制主背景
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, bgColor)
+
+        // 绘制顶部 Header 背景
+        val headerAlpha = (opacity * 0.72f).toInt().coerceIn(0, 255)
+        val headerBgColor = (headerAlpha shl 24) or COLOR_HEADER_BG
+        val headerHeight = L.AVATAR_SIZE + L.AVATAR_Y_OFFSET * 2
+        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + headerHeight, headerBgColor)
+
+        // 绘制 Header 底部分隔线
+        val headerBorderColor = (opacity shl 24) or COLOR_HEADER_BORDER
+        ctx.fill(cardX, cardY + headerHeight - 1, cardX + L.CARD_WIDTH, cardY + headerHeight, headerBorderColor)
+
+        // 左侧重音线 (Accent Line)
+        // 获取与本地玩家的关系颜色（此处改为直接使用玩家队伍颜色）
+        val accentRgb = try {
+            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
+        } catch (_: Exception) {
+            0xAAAAAA
         }
-        
-        // 通过枚举查找对应纹理路径
-        val dimIcon = CardLayout.DimensionIcon.fromDimensionId(dim)
-        
-        // 如果找不到对应的维度图标，使用纯色背景
-        if (dimIcon == null) {
-            ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
-            drawCardBorder(ctx, cardX, cardY, opacity)
-            return
-        }
-        
-        // 先绘制半透明黑色底色（整个卡片）
-        ctx.fill(cardX, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, L.bgColor(opacity))
-        
-        // 计算血量百分比（0.0 - 1.0）
-        val healthPercent = (player.health / player.maxHealth).coerceIn(0.0, 1.0)
-        
-        // 计算纹理应该占据的高度（从下往上）
-        val textureHeight = (L.CARD_HEIGHT * healthPercent).toInt()
-        
-        // 如果血量为0，不绘制纹理
-        if (textureHeight <= 0) {
-            drawCardBorder(ctx, cardX, cardY, opacity)
-            return
-        }
-        
-        // 计算纹理绘制的起始Y坐标（从底部向上）
-        val textureStartY = cardY + L.CARD_HEIGHT - textureHeight
-        
-        // 构建纹理标识符
-        val textureLocation = Identifier.parse(dimIcon.textureId)
-        
-        // 平铺渲染方块纹理（16x16原始大小），只渲染血量对应的高度
-        val tileSize = 16
-        
-        // 从纹理起始位置开始平铺
-        var tileY = 0
-        while (tileY < textureHeight) {
-            var tileX = 0
-            while (tileX < L.CARD_WIDTH) {
-                // 计算实际渲染位置（卡片坐标 + 平铺偏移）
-                val x0 = cardX + tileX
-                val y0 = textureStartY + tileY
-                
-                // 计算当前tile的实际渲染尺寸（处理边缘裁剪）
-                val renderWidth = tileSize.coerceAtMost(L.CARD_WIDTH - tileX)
-                val renderHeight = tileSize.coerceAtMost(textureHeight - tileY)
-                
-                // 计算右下角坐标
-                val x1 = x0 + renderWidth
-                val y1 = y0 + renderHeight
-                
-                // 计算UV坐标（纹理坐标范围 0.0 - 1.0）
-                val u0 = 0f
-                val v0 = 0f
-                val u1 = renderWidth.toFloat() / 16f
-                val v1 = renderHeight.toFloat() / 16f
-                
-                // 使用 blit 方法渲染纹理
-                ctx.blit(textureLocation, x0, y0, x1, y1, u0, u1, v0, v1)
-                
-                tileX += tileSize
-            }
-            tileY += tileSize
-        }
-        
-        // 在纹理上方叠加一层半透明黑色，使纹理不会太亮（只覆盖纹理区域）
-        val overlayAlpha = (opacity / 3).coerceIn(0, 255)
-        val overlayColor = (overlayAlpha shl 24) or 0x000000
-        ctx.fill(cardX, textureStartY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, overlayColor)
-        
-        // 绘制淡灰色边框
+        val accentColor = (opacity shl 24) or accentRgb
+        val accentWidth = 4
+        ctx.fill(cardX, cardY, cardX + accentWidth, cardY + L.CARD_HEIGHT, accentColor)
+
+        // 绘制卡片边框
         drawCardBorder(ctx, cardX, cardY, opacity)
     }
     
@@ -229,8 +187,7 @@ object PlayerCardRenderer {
      * @param opacity 不透明度 (0-255)
      */
     private fun drawCardBorder(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
-        val borderAlpha = (opacity * 2 / 3).coerceIn(0, 255)
-        val borderColor = (borderAlpha shl 24) or 0x808080  // 灰色 RGB(128, 128, 128)
+        val borderColor = (opacity shl 24) or COLOR_LINE
         val borderWidth = 1
         
         // 上边框
@@ -323,7 +280,7 @@ object PlayerCardRenderer {
 
     private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
-        val nameColor = if (player.isAlive) (opacity shl 24) or 0xFFFFFF else (opacity shl 24) or 0x888888
+        val nameColor = if (player.isAlive) (opacity shl 24) or COLOR_TEXT else (opacity shl 24) or 0x888888
         val scale = 0.6f  // 增大文字（从 0.5f 提升到 0.6f）
         
         // 计算在缩放后能容纳的最大宽度
@@ -488,14 +445,14 @@ object PlayerCardRenderer {
             val leftX = 2
 
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
-            ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+            ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_HP, true)
 
             // 右侧：盔甲图标 + 盔甲值
             val armorValueText = "${player.armor}"
             val armorIconX = 26  // 右侧位置
             // 渲染盔甲图标（不带灰色底纹）
             renderArmorIconOnly(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
-            ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or 0xFFFFFF, false)
+            ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_ARMOR, true)
         }
     }
 
@@ -614,7 +571,9 @@ object PlayerCardRenderer {
     @Suppress("unused")
     private fun renderSmallItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         // 背景
-        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
+        val bgColor = (bgAlpha shl 24) or 0x000000
+        ctx.fill(x, y, x + size, y + size, bgColor)
 
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
@@ -634,7 +593,9 @@ object PlayerCardRenderer {
      */
     @Suppress("unused")
     private fun renderItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
-        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
+        val bgColor = (bgAlpha shl 24) or 0x000000
+        ctx.fill(x, y, x + size, y + size, bgColor)
 
         if (itemId == null) return
         val stack = resolveItemStack(itemId) ?: return
@@ -653,7 +614,9 @@ object PlayerCardRenderer {
      */
     private fun renderSmallItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         // 背景
-        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
+        val bgColor = (bgAlpha shl 24) or 0x000000
+        ctx.fill(x, y, x + size, y + size, bgColor)
 
         // 绘制细边框
         drawThinBorder(ctx, x, y, size, opacity)
@@ -676,7 +639,9 @@ object PlayerCardRenderer {
      */
     private fun renderItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
         // 背景
-        ctx.fill(x, y, x + size, y + size, CardLayout.slotBgColor(opacity))
+        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
+        val bgColor = (bgAlpha shl 24) or 0x000000
+        ctx.fill(x, y, x + size, y + size, bgColor)
 
         // 绘制细边框
         drawThinBorder(ctx, x, y, size, opacity)
@@ -782,7 +747,7 @@ object PlayerCardRenderer {
      * 绘制细白色边框（通过 0.5 倍缩放实现更细的边框线），接收任意大小的槽位
      */
     private fun drawThinBorder(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
-        val borderColor = (opacity shl 24) or 0xFFFFFF
+        val borderColor = (opacity shl 24) or 0x576274 // Line Soft
         // 使用缩放到 0.5 来绘制更细的边框
         withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
             val scaledSize = size * 2
