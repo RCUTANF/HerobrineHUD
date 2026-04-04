@@ -1,11 +1,9 @@
 package com.RCUTANF.herobrinehud.client.ui
 
 import com.RCUTANF.herobrinehud.client.animation.PlayerAnimationManager
-import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.data.PlayerInfo
-import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -28,6 +26,10 @@ import java.util.UUID
 object PlayerCardRenderer {
 
     private val L = CardLayout
+    private const val FULL_BODY_WIDTH = 15
+    private const val FULL_BODY_HEIGHT = 30
+    private const val FULL_BODY_Y_OFFSET = 9
+    private const val NAME_ABOVE_BODY_Y_OFFSET = 2
 
     // ──────────────────────────────────────────────────────────────
     // 新增：Neo-Pixel 配色常量 (RGB)
@@ -36,9 +38,9 @@ object PlayerCardRenderer {
     private const val COLOR_LINE = 0x3B4656
     private const val COLOR_TEXT = 0xEEF3F8
     private const val COLOR_HP = 0xFF5C5C
-    private const val COLOR_ARMOR = 0xD7DDE7
     private const val COLOR_HEADER_BG = 0x0D1015
     private const val COLOR_HEADER_BORDER = 0x2E3744
+    private const val COLOR_LINE_SOFT = 0x576274
 
     /**
      * 渲染完整的玩家卡片（竖向布局）
@@ -58,53 +60,52 @@ object PlayerCardRenderer {
         // 卡片背景：使用维度对应方块的纹理
         renderCardBackground(ctx, cardX, cardY, teamColor, opacity)
 
-        // 竖向布局：
-        // 1. 顶部：头像（左） + 主副手物品（右）
-        // 2. 头像下方：名称
-        // 3. 名称下方：心形+血量（左）和盔甲图标+盔甲值（右）横向并列（缩小60%）
-        // 4. 其下：四个护甲槽位（居中）
-        // 5. 最下：效果徽章
-
-        val avatarX = cardX + L.AVATAR_X_OFFSET
-        val avatarY = cardY + L.AVATAR_Y_OFFSET
-
-        // 1. 顶部：头像 + 旁观高亮
-        if (config.showAvatar) {
-            renderAvatar(ctx, player, avatarX, avatarY, opacity)
-            if (ClientTeamData.isSpectating(player.uuid)) {
-                renderSpectateHighlight(ctx, avatarX, avatarY, opacity)
-            }
+        if (ClientTeamData.isSpectating(player.uuid)) {
+            renderCardSpectateHighlight(ctx, cardX, cardY, opacity)
         }
 
-        // 1. 顶部右侧：主副手物品（与头像同一行）
+        // 竖向布局：
+        // 1. 顶部：全身像
+        // 2. 名称（全身像上方，占据整个卡片宽度，居中）
+        // 3. 血量（主副手下方）
+        // 4. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
+
+        val avatarX = cardX + L.AVATAR_X_OFFSET
+        val bodyX = avatarX + (L.AVATAR_SIZE - FULL_BODY_WIDTH) / 2
+        val bodyY = cardY + FULL_BODY_Y_OFFSET
+        val handX = cardX + L.HAND_X_OFFSET
+        val handY = cardY + L.HAND_Y_OFFSET
+
+        // 1. 顶部：全身像 + 名称共用一个层次化背景框
+        if (config.showAvatar) {
+            renderAvatarNameFrame(ctx, bodyX, cardY + NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity, teamColor)
+            renderAvatar(ctx, player, bodyX, bodyY, opacity)
+        }
+
+        // 保留主副手图标渲染（与现有布局兼容）
         if (config.showEquipment) {
-            val handX = cardX + L.HAND_X_OFFSET
-            val handY = cardY + L.HAND_Y_OFFSET
             renderHandIcons(ctx, player, handX, handY, opacity)
         }
 
-        // 2. 名称（头像下方，占据整个卡片宽度，居中）
-        val nameX = cardX
-        val nameY = cardY + L.NAME_Y_OFFSET
-        renderName(ctx, player, nameX, nameY, opacity)
+        // 2. 名称（全身像上方，占据整个卡片宽度，居中）
+        val nameX = if (config.showAvatar) bodyX else cardX
+        val nameWidth = if (config.showAvatar) FULL_BODY_WIDTH else L.CARD_WIDTH
+        val nameY = cardY + NAME_ABOVE_BODY_Y_OFFSET
+        renderName(ctx, player, nameX, nameY, nameWidth, opacity)
 
         // 3. 队伍名（名称下方）- 暂时不渲染
         // val teamNameY = cardY + L.TEAM_NAME_Y_OFFSET
         // renderTeamName(ctx, teamName, teamColor, nameX, teamNameY, opacity)
 
-        // 4. 血量和盔甲值（竖向排列）
-        if (config.showHealthNumber || config.showArmor) {
+        // 4. 血量（主副手下方）
+        if (config.showHealthNumber) {
             val healthArmorY = cardY + L.HEALTH_ARMOR_Y
-            renderHealthAndArmorValuesVertical(ctx, player, cardX, healthArmorY, opacity)
+            renderHealthValueBelowHands(ctx, player, handX, healthArmorY, opacity)
         }
 
-        // 5. 护甲槽位（四个槽位，居中排列）
-        if (config.showArmor) {
-            val armorSlotsY = cardY + L.ARMOR_SLOTS_Y
-            renderArmorRowCentered(ctx, player, cardX, armorSlotsY, opacity)
-        }
+        // 护甲槽位已移除，为全身像留出更大空间
 
-        // 6. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
+        // 5. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
         val effectsY = cardY + L.EFFECTS_Y
         if (config.showEffects && player.effects.isNotEmpty()) {
             val effectsX = cardX + 2
@@ -172,7 +173,7 @@ object PlayerCardRenderer {
         }
         val accentColor = (opacity shl 24) or accentRgb
         val accentWidth = 4
-        ctx.fill(cardX, cardY, cardX + accentWidth, cardY + L.CARD_HEIGHT, accentColor)
+        //ctx.fill(cardX, cardY, cardX + accentWidth, cardY + L.CARD_HEIGHT, accentColor)
 
         // 绘制卡片边框
         drawCardBorder(ctx, cardX, cardY, opacity)
@@ -200,6 +201,46 @@ object PlayerCardRenderer {
         ctx.fill(cardX + L.CARD_WIDTH - borderWidth, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, borderColor)
     }
 
+    private fun renderAvatarNameFrame(ctx: GuiGraphics, x: Int, nameY: Int, bodyY: Int, opacity: Int, teamColor: String) {
+        val frameX = x - 1
+        val frameY = nameY - 1
+        val frameW = FULL_BODY_WIDTH + 2
+        val frameH = bodyY + FULL_BODY_HEIGHT - nameY + 2
+        val splitY = bodyY - 1
+
+        // 分层背景：顶部名字区更亮，主体预览区更深，接近 HTML 里 header + panel 的层次感
+        val outerBg = ((opacity * 0.24f).toInt().coerceIn(0, 255) shl 24) or COLOR_PANEL_BG
+        val nameBg = ((opacity * 0.30f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BG
+        val bodyBg = ((opacity * 0.45f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BG
+        val borderColor = ((opacity * 0.58f).toInt().coerceIn(0, 255) shl 24) or COLOR_LINE_SOFT
+        val innerHighlight = ((opacity * 0.24f).toInt().coerceIn(0, 255) shl 24) or 0xFFFFFF
+        val sectionLine = ((opacity * 0.40f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BORDER
+        val accentColor = ((opacity * 0.70f).toInt().coerceIn(0, 255) shl 24) or parseTeamColor(teamColor)
+
+        ctx.fill(frameX, frameY, frameX + frameW, frameY + frameH, outerBg)
+        ctx.fill(frameX + 1, frameY + 1, frameX + frameW - 1, splitY, nameBg)
+        ctx.fill(frameX + 1, splitY, frameX + frameW - 1, frameY + frameH - 1, bodyBg)
+
+        // 细淡外边框
+        ctx.fill(frameX, frameY, frameX + frameW, frameY + 1, borderColor)
+        ctx.fill(frameX, frameY + frameH - 1, frameX + frameW, frameY + frameH, borderColor)
+        ctx.fill(frameX, frameY, frameX + 1, frameY + frameH, borderColor)
+        ctx.fill(frameX + frameW - 1, frameY, frameX + frameW, frameY + frameH, borderColor)
+
+        // 内高光 + 区域分隔线，提升层次
+        //ctx.fill(frameX + 1, frameY + 1, frameX + frameW - 1, frameY + 2, innerHighlight)
+        //ctx.fill(frameX + 1, splitY, frameX + frameW - 1, splitY + 1, sectionLine)
+
+        // 左侧轻量队伍重音线
+        //ctx.fill(frameX, frameY + 1, frameX + 1, frameY + frameH - 1, accentColor)
+    }
+
+    private fun parseTeamColor(teamColor: String): Int = try {
+        teamColor.trimStart('#').toInt(16) and 0xFFFFFF
+    } catch (_: Exception) {
+        0xAAAAAA
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  头像
     // ──────────────────────────────────────────────────────────────
@@ -207,7 +248,7 @@ object PlayerCardRenderer {
     private fun renderAvatar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val client = Minecraft.getInstance()
 
-        // 优先：从本地 SkinManager 获取
+        // 优先：从本地 SkinManager 获取并绘制全身像
         val uuid = runCatching { UUID.fromString(player.uuid) }.getOrNull()
         if (uuid != null) {
             try {
@@ -219,58 +260,76 @@ object PlayerCardRenderer {
                     ?.get()
                     ?.body()
                     ?.texturePath()
-                skinTexture?.let { blitHead(ctx, it, x, y) }
-                return
+                skinTexture?.let {
+                    blitFullBody(ctx, it, x, y)
+                    return
+                }
             } catch (_: Exception) {
                 // 皮肤未加载，继续 fallback
             }
         }
 
-        // 降级使用服务端下发的头像 URL（AvatarTextureCache 异步下载并注册）
-//        val avatarTexture: Identifier? = player.avatar?.let { AvatarTextureCache.getTexture(it) }
-//
-//        if (avatarTexture != null) {
-//            blitHead(ctx, avatarTexture, x, y)
-//            return
-//        }
-
-        // 最终 Fallback：纯色方块 + 名称首字母
+        // 最终 Fallback：纯色全身像占位 + 名称首字母
         val font = client.font
-        ctx.fill(x, y, x + L.AVATAR_SIZE, y + L.AVATAR_SIZE, (opacity shl 24) or 0x336699)
+        ctx.fill(x, y, x + FULL_BODY_WIDTH, y + FULL_BODY_HEIGHT, (opacity shl 24) or 0x2D3A4A)
         val initial = player.name.take(1).uppercase()
         ctx.drawString(
             font, initial,
-            x + (L.AVATAR_SIZE - font.width(initial)) / 2,
-            y + (L.AVATAR_SIZE - 8) / 2,
+            x + (FULL_BODY_WIDTH - font.width(initial)) / 2,
+            y + (FULL_BODY_HEIGHT - 8) / 2,
             (opacity shl 24) or 0xFFFFFF, false
         )
     }
 
     /**
-     * 从标准皮肤贴图中绘制头部（底层 + 覆盖层）
-     *
-     * @param texture 已注册的皮肤纹理 Identifier（64×64 标准格式）
+     * 从标准皮肤贴图中绘制全身正面（底层 + 覆盖层）
      */
-    private fun blitHead(ctx: GuiGraphics, texture: Identifier, x: Int, y: Int) {
-        // 头部底层：UV (8,8)，大小 8×8
+    private fun blitFullBody(ctx: GuiGraphics, texture: Identifier, x: Int, y: Int) {
+        withPose(ctx, x.toFloat(), y.toFloat(), FULL_BODY_WIDTH / 16f, FULL_BODY_HEIGHT / 32f) {
+            // Head
+            blitSkinPart(ctx, texture, 4, 0, 8, 8, 8f, 8f, 8, 8)
+            blitSkinPart(ctx, texture, 4, 0, 8, 8, 40f, 8f, 8, 8)
+            // Body
+            blitSkinPart(ctx, texture, 4, 8, 8, 12, 20f, 20f, 8, 12)
+            blitSkinPart(ctx, texture, 4, 8, 8, 12, 20f, 36f, 8, 12)
+            // Arms
+            blitSkinPart(ctx, texture, 0, 8, 4, 12, 44f, 20f, 4, 12)
+            blitSkinPart(ctx, texture, 0, 8, 4, 12, 44f, 36f, 4, 12)
+            blitSkinPart(ctx, texture, 12, 8, 4, 12, 36f, 52f, 4, 12)
+            blitSkinPart(ctx, texture, 12, 8, 4, 12, 52f, 52f, 4, 12)
+            // Legs
+            blitSkinPart(ctx, texture, 4, 20, 4, 12, 4f, 20f, 4, 12)
+            blitSkinPart(ctx, texture, 4, 20, 4, 12, 4f, 36f, 4, 12)
+            blitSkinPart(ctx, texture, 8, 20, 4, 12, 20f, 52f, 4, 12)
+            blitSkinPart(ctx, texture, 8, 20, 4, 12, 4f, 52f, 4, 12)
+        }
+    }
+
+    private fun blitSkinPart(
+        ctx: GuiGraphics,
+        texture: Identifier,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        u: Float,
+        v: Float,
+        regionWidth: Int,
+        regionHeight: Int
+    ) {
         ctx.blit(
             RenderPipelines.GUI_TEXTURED,
             texture,
-            x, y,
-            8f, 8f,
-            L.AVATAR_SIZE, L.AVATAR_SIZE,
-            8, 8,
-            64, 64
-        )
-        // 头部覆盖层：UV (40,8)，大小 8×8
-        ctx.blit(
-            RenderPipelines.GUI_TEXTURED,
-            texture,
-            x, y,
-            40f, 8f,
-            L.AVATAR_SIZE, L.AVATAR_SIZE,
-            8, 8,
-            64, 64
+            x,
+            y,
+            u,
+            v,
+            width,
+            height,
+            regionWidth,
+            regionHeight,
+            64,
+            64
         )
     }
 
@@ -278,13 +337,13 @@ object PlayerCardRenderer {
     //  名称
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, width: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val nameColor = if (player.isAlive) (opacity shl 24) or COLOR_TEXT else (opacity shl 24) or 0x888888
         val scale = 0.6f  // 增大文字（从 0.5f 提升到 0.6f）
         
         // 计算在缩放后能容纳的最大宽度
-        val maxScaledWidth = L.NAME_MAX_WIDTH / scale
+        val maxScaledWidth = minOf(L.NAME_MAX_WIDTH.toFloat(), width.toFloat()) / scale
         val displayName = if (font.width(player.name) > maxScaledWidth) {
             // 截断并加省略号
             var truncated = player.name
@@ -299,7 +358,7 @@ object PlayerCardRenderer {
         // 使用通用 pose 辅助简化缩放与居中逻辑
         withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
             val textWidth = font.width(displayName)
-            val textX = (L.CARD_WIDTH / scale / 2f - textWidth / 2f).toInt()
+            val textX = (width / scale / 2f - textWidth / 2f).toInt()
             ctx.drawString(font, displayName, textX, 0, nameColor, false)
         }
     }
@@ -428,47 +487,22 @@ object PlayerCardRenderer {
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  护甲行（护甲值 + 四个护甲槽位）
+    //  血量行（主副手下方）
     // ──────────────────────────────────────────────────────────────
 
-    // 新增：竖向布局专用 - 横向并列心形图标+血量和盔甲图标+盔甲值（缩小尺寸）
-    private fun renderHealthAndArmorValuesVertical(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
+    // 仅保留血量，盔甲信息不再渲染
+    private fun renderHealthValueBelowHands(ctx: GuiGraphics, player: PlayerInfo, handX: Int, y: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val iconSize = L.HEART_ICON_SIZE
-        val scale = 0.6f  // 缩放到60%大小
-        
-        // 使用 withPose 简化矩阵管理
-        withPose(ctx, cardX.toFloat(), y.toFloat(), scale, scale) {
-            // 左侧：心形图标 + 血量文本
+        val scale = 0.6f
+
+        withPose(ctx, handX.toFloat(), y.toFloat(), scale, scale) {
             val healthText = "${player.health.toInt()}"
             val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
-            val leftX = 2
+            val leftX = 0
 
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
             ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_HP, true)
-
-            // 右侧：盔甲图标 + 盔甲值
-            val armorValueText = "${player.armor}"
-            val armorIconX = 26  // 右侧位置
-            // 渲染盔甲图标（不带灰色底纹）
-            renderArmorIconOnly(ctx, "minecraft:iron_chestplate", armorIconX, 0, iconSize, opacity)
-            ctx.drawString(font, armorValueText, armorIconX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_ARMOR, true)
-        }
-    }
-
-    // 新增：竖向布局专用 - 居中渲染四个护甲槽位
-    private fun renderArmorRowCentered(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, y: Int, opacity: Int) {
-        val eq = player.equipment
-        val armorItems = listOf(eq.helmet, eq.chestplate, eq.leggings, eq.boots)
-        
-        // 计算总宽度并居中
-        val totalWidth = (L.SLOT_SIZE * 4) + (L.SLOT_GAP * 3)
-        val startX = cardX + (L.CARD_WIDTH - totalWidth) / 2
-        
-        var slotX = startX
-        for (itemId in armorItems) {
-            renderSmallItemSlotWithBorder(ctx, itemId, slotX, y, L.SLOT_SIZE, opacity)
-            slotX += L.SLOT_SIZE + L.SLOT_GAP
         }
     }
 
@@ -659,24 +693,6 @@ object PlayerCardRenderer {
     }
 
     /**
-     * 渲染盔甲图标（不带灰色底纹）
-     */
-    @Suppress("UNUSED_PARAMETER")
-    private fun renderArmorIconOnly(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
-        if (itemId == null) return
-        val stack = resolveItemStack(itemId) ?: return
-
-        // 缩放矩阵渲染（不绘制背景）
-        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
-            try {
-                ctx.renderItem(stack, 0, 0)
-            } catch (_: Exception) {
-                // 物品渲染异常时静默忽略
-            }
-        }
-    }
-
-    /**
      * 将物品 ID 字符串解析为 ItemStack
      * 例如 "minecraft:diamond_helmet" -> ItemStack(Items.DIAMOND_HELMET)
      */
@@ -709,19 +725,15 @@ object PlayerCardRenderer {
     /**
      * 在头像周围渲染黄色高亮框
      */
-    private fun renderSpectateHighlight(ctx: GuiGraphics, x: Int, y: Int, opacity: Int) {
-        val highlightColor = (opacity shl 24) or 0xFFFF00  // 黄色
-        val borderWidth = 2
-        
-        // 绘制四条边框线
-        // 上边
-        ctx.fill(x - borderWidth, y - borderWidth, x + L.AVATAR_SIZE + borderWidth, y, highlightColor)
-        // 下边
-        ctx.fill(x - borderWidth, y + L.AVATAR_SIZE, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE + borderWidth, highlightColor)
-        // 左边
-        ctx.fill(x - borderWidth, y, x, y + L.AVATAR_SIZE, highlightColor)
-        // 右边
-        ctx.fill(x + L.AVATAR_SIZE, y, x + L.AVATAR_SIZE + borderWidth, y + L.AVATAR_SIZE, highlightColor)
+    private fun renderCardSpectateHighlight(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+        val alpha = (opacity * 0.9f).toInt().coerceIn(0, 255)
+        val highlightColor = (alpha shl 24) or 0xFFFFFF
+        val borderWidth = 1
+
+        ctx.fill(cardX - borderWidth, cardY - borderWidth, cardX + L.CARD_WIDTH + borderWidth, cardY, highlightColor)
+        ctx.fill(cardX - borderWidth, cardY + L.CARD_HEIGHT, cardX + L.CARD_WIDTH + borderWidth, cardY + L.CARD_HEIGHT + borderWidth, highlightColor)
+        ctx.fill(cardX - borderWidth, cardY, cardX, cardY + L.CARD_HEIGHT, highlightColor)
+        ctx.fill(cardX + L.CARD_WIDTH, cardY, cardX + L.CARD_WIDTH + borderWidth, cardY + L.CARD_HEIGHT, highlightColor)
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -747,7 +759,7 @@ object PlayerCardRenderer {
      * 绘制细白色边框（通过 0.5 倍缩放实现更细的边框线），接收任意大小的槽位
      */
     private fun drawThinBorder(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
-        val borderColor = (opacity shl 24) or 0x576274 // Line Soft
+        val borderColor = (opacity shl 24) or COLOR_LINE_SOFT // Line Soft
         // 使用缩放到 0.5 来绘制更细的边框
         withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
             val scaledSize = size * 2

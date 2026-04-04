@@ -15,7 +15,7 @@ object CardLayout {
 
     // ── 卡片整体 ──────────────────────────────────────────────
     const val CARD_WIDTH = 30         // 窄卡片（头像16 + 主副手8 + 边距）
-    const val CARD_HEIGHT = 55       // 高卡片
+    const val CARD_HEIGHT = 53       // 更紧凑：继续回收盔甲移除后的 2px 高度
     const val CARD_GAP = 1            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
@@ -39,21 +39,21 @@ object CardLayout {
     const val TEAM_NAME_Y_OFFSET = 30 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
 
-    // ── 血量和盔甲值区域（竖向排列）──────────────────────────
-    const val HEALTH_ARMOR_Y = 28     // 血量起始 Y 偏移（名称下方）
+    // ── 血量区域（放在主副手槽位下方）──────────────────────────
+    const val HEALTH_ARMOR_Y = 22     // 血量起始 Y 偏移（主副手下方）
     const val HEART_ICON_SIZE = 9     // 心形图标大小
     const val ARMOR_ICON_SIZE = 9     // 护甲图标大小
     const val ICON_TEXT_GAP = 2       // 图标与数字之间的间距
     const val HEALTH_X_OFFSET = 2     // 血量（心形）起始 X（已废弃，现在居中）
     const val ARMOR_X_OFFSET = 32     // 盔甲值起始 X（已废弃，现在居中）
 
-    // ── 护甲槽位区域 ──────────────────────────────────────────
-    const val ARMOR_SLOTS_Y = 36      // 护甲槽位行的 Y 偏移（血量+盔甲下方，紧凑布局）
+    // ── 护甲槽位区域（已停用） ─────────────────────────────────
+    const val ARMOR_SLOTS_Y = 40      // 已停用：保留常量避免其他引用报错
     const val SLOT_SIZE = 6           // 装备槽位大小（缩小以适应窄卡片）
     const val SLOT_GAP = 1            // 槽位之间的间距
 
     // ── 效果徽章区域 ──────────────────────────────────────────
-    const val EFFECTS_Y = 46          // 效果徽章起始 Y 偏移（护甲槽位下方，紧凑布局）
+    const val EFFECTS_Y = 43          // 效果徽章起始 Y 偏移（血量下方）
     const val EFFECT_BADGE_SIZE = 5   // 效果徽章大小（缩小以适应窄卡片）
     const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距
 
