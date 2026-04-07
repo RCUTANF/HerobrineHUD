@@ -24,7 +24,13 @@ object CardLayout {
     const val AVATAR_SIZE = 14        // 头像渲染大小（像素）
     const val AVATAR_X_OFFSET = 2     // 头像在卡片内的 X 偏移
     const val AVATAR_Y_OFFSET = 3     // 头像在卡片内的 Y 偏移（顶部）
-    
+
+    // ── 全身像区域 ──────────────────────────────────────────────
+    const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度
+    const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度
+    const val FULL_BODY_Y_OFFSET = 9        // 全身像在卡片内的 Y 偏移
+    const val NAME_ABOVE_BODY_Y_OFFSET = 2  // 名称相对卡片顶部的 Y 偏移
+
     const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
     const val HAND_X_OFFSET = 20      // 主副手起始 X（头像右侧）
     const val HAND_Y_OFFSET = 2       // 主手 Y 偏移（与头像顶部对齐）
@@ -34,7 +40,7 @@ object CardLayout {
     const val NAME_Y_OFFSET = 20      // 名称文字在卡片内的 Y 偏移（头像下方，保持适当间距）
     const val NAME_HEIGHT = 10        // 名称区域高度（增加以容纳更大的文字）
     const val NAME_MAX_WIDTH = 28     // 名称最大宽度（占据整个卡片宽度 - 小边距）
-    
+
     // ── 队伍名称区域 ──────────────────────────────────────────
     const val TEAM_NAME_Y_OFFSET = 30 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
@@ -54,38 +60,13 @@ object CardLayout {
 
     // ── 效果徽章区域 ──────────────────────────────────────────
     const val EFFECTS_Y = 43          // 效果徽章起始 Y 偏移（血量下方）
+    const val EFFECTS_X_PADDING = 2   // 效果徽章区域左侧内边距
+    const val EFFECTS_HORIZONTAL_PADDING = 4 // 效果徽章区域总水平内边距（左右各 2）
     const val EFFECT_BADGE_SIZE = 5   // 效果徽章大小（缩小以适应窄卡片）
     const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距
 
-    // ── 废弃的常量（保留以防其他地方引用） ──────────────────
-    @Deprecated("使用新的竖向布局")
-    const val AVATAR_SECTION_WIDTH = 20
-    @Deprecated("使用新的竖向布局")
-    const val INFO_X = 23
-    @Deprecated("使用新的竖向布局")
-    const val ROW1_Y = 4
-    @Deprecated("使用新的竖向布局")
-    const val HEALTH_BAR_WIDTH = 60
-    @Deprecated("使用新的竖向布局")
-    const val HEALTH_BAR_HEIGHT = 6
-    @Deprecated("使用新的竖向布局")
-    const val HEALTH_NUMBER_Y = 4
-    @Deprecated("使用新的竖向布局")
-    const val DIM_BADGE_X_FROM_RIGHT = 6
-    @Deprecated("使用新的竖向布局")
-    const val ROW2_Y = 16
-    @Deprecated("使用新的竖向布局")
-    const val ARMOR_ICON_GAP = 2
-    @Deprecated("使用新的竖向布局")
-    const val ARMOR_VALUE_WIDTH = 28
-    @Deprecated("使用新的竖向布局")
-    const val ROW3_Y = 30
-
-    /** 将 alpha (0-255) 组合为半透明黑色背景 ARGB */
-    fun bgColor(opacity: Int): Int = ((opacity / 2) shl 24) or 0x000000
-    // ── 淡灰色槽位背景色 ────────────────────────────────────────
-    /** 将 alpha 组合为淡灰色背景 ARGB（用于槽位） */
-    fun slotBgColor(opacity: Int): Int = ((opacity) shl 24) or 0x8B8B8B
+    // ── 快捷键区域 ────────────────────────────────────────────
+    const val HOTKEY_MARGIN = 2       // 右下角快捷键与边缘的距离
 
     // ── 维度图标尺寸 ──────────────────────────────────────────
     const val DIM_BADGE_ICON_SIZE = 10    // 维度图标渲染大小（像素，与护甲槽位一致）
@@ -120,26 +101,5 @@ object CardLayout {
         "minecraft:overworld" to "主世界",
         "minecraft:the_nether" to "下界",
         "minecraft:the_end" to "末地"
-    )
-
-    // ── 效果颜色映射（部分常见效果） ──────────────────────────────
-    val EFFECT_COLORS = mapOf(
-        "minecraft:speed" to 0x7CAFC6,
-        "minecraft:slowness" to 0x5A6C81,
-        "minecraft:strength" to 0x932423,
-        "minecraft:weakness" to 0x484D48,
-        "minecraft:regeneration" to 0xCD5CAB,
-        "minecraft:poison" to 0x4E9331,
-        "minecraft:wither" to 0x352A27,
-        "minecraft:fire_resistance" to 0xE49A3A,
-        "minecraft:water_breathing" to 0x2E5299,
-        "minecraft:resistance" to 0x99453A,
-        "minecraft:jump_boost" to 0x786297,
-        "minecraft:haste" to 0xD9C043,
-        "minecraft:mining_fatigue" to 0x4A4217,
-        "minecraft:night_vision" to 0x1F1FA1,
-        "minecraft:invisibility" to 0x7F8392,
-        "minecraft:absorption" to 0x2552A5,
-        "minecraft:saturation" to 0xF82423
     )
 }

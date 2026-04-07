@@ -25,10 +25,6 @@ import java.util.UUID
 object PlayerCardRenderer {
 
     private val L = CardLayout
-    private const val FULL_BODY_WIDTH = 15
-    private const val FULL_BODY_HEIGHT = 30
-    private const val FULL_BODY_Y_OFFSET = 9
-    private const val NAME_ABOVE_BODY_Y_OFFSET = 2
 
     // ──────────────────────────────────────────────────────────────
     // 新增：Neo-Pixel 配色常量 (RGB)
@@ -70,14 +66,14 @@ object PlayerCardRenderer {
         // 4. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
 
         val avatarX = cardX + L.AVATAR_X_OFFSET
-        val bodyX = avatarX + (L.AVATAR_SIZE - FULL_BODY_WIDTH) / 2
-        val bodyY = cardY + FULL_BODY_Y_OFFSET
+        val bodyX = avatarX + (L.AVATAR_SIZE - L.FULL_BODY_WIDTH) / 2
+        val bodyY = cardY + L.FULL_BODY_Y_OFFSET
         val handX = cardX + L.HAND_X_OFFSET
         val handY = cardY + L.HAND_Y_OFFSET
 
         // 1. 顶部：全身像 + 名称共用一个层次化背景框
         if (config.showAvatar) {
-            renderAvatarNameFrame(ctx, bodyX, cardY + NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity)
+            renderAvatarNameFrame(ctx, bodyX, cardY + L.NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity)
             renderAvatar(ctx, player, bodyX, bodyY, opacity)
         }
 
@@ -88,8 +84,8 @@ object PlayerCardRenderer {
 
         // 2. 名称（全身像上方，占据整个卡片宽度，居中）
         val nameX = if (config.showAvatar) bodyX else cardX
-        val nameWidth = if (config.showAvatar) FULL_BODY_WIDTH else L.CARD_WIDTH
-        val nameY = cardY + NAME_ABOVE_BODY_Y_OFFSET
+        val nameWidth = if (config.showAvatar) L.FULL_BODY_WIDTH else L.CARD_WIDTH
+        val nameY = cardY + L.NAME_ABOVE_BODY_Y_OFFSET
         renderName(ctx, player, nameX, nameY, nameWidth, opacity)
 
         // 4. 血量（主副手下方）
@@ -103,8 +99,8 @@ object PlayerCardRenderer {
         // 5. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
         val effectsY = cardY + L.EFFECTS_Y
         if (config.showEffects && player.effects.isNotEmpty()) {
-            val effectsX = cardX + 2
-            val availableWidth = L.CARD_WIDTH - 4
+            val effectsX = cardX + L.EFFECTS_X_PADDING
+            val availableWidth = L.CARD_WIDTH - L.EFFECTS_HORIZONTAL_PADDING
             renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
             // 当有效果时，在卡片右下角绘制快捷键编号
             if (hotkeyNumber != null) {
@@ -187,8 +183,8 @@ object PlayerCardRenderer {
     private fun renderAvatarNameFrame(ctx: GuiGraphics, x: Int, nameY: Int, bodyY: Int, opacity: Int) {
         val frameX = x - 1
         val frameY = nameY - 1
-        val frameW = FULL_BODY_WIDTH + 2
-        val frameH = bodyY + FULL_BODY_HEIGHT - nameY + 2
+        val frameW = L.FULL_BODY_WIDTH + 2
+        val frameH = bodyY + L.FULL_BODY_HEIGHT - nameY + 2
         val splitY = bodyY - 1
 
         // 分层背景：顶部名字区更亮，主体预览区更深，接近 HTML 里 header + panel 的层次感
@@ -244,12 +240,12 @@ object PlayerCardRenderer {
 
         // 最终 Fallback：纯色全身像占位 + 名称首字母
         val font = client.font
-        ctx.fill(x, y, x + FULL_BODY_WIDTH, y + FULL_BODY_HEIGHT, (opacity shl 24) or 0x2D3A4A)
+        ctx.fill(x, y, x + L.FULL_BODY_WIDTH, y + L.FULL_BODY_HEIGHT, (opacity shl 24) or 0x2D3A4A)
         val initial = player.name.take(1).uppercase()
         ctx.drawString(
             font, initial,
-            x + (FULL_BODY_WIDTH - font.width(initial)) / 2,
-            y + (FULL_BODY_HEIGHT - 8) / 2,
+            x + (L.FULL_BODY_WIDTH - font.width(initial)) / 2,
+            y + (L.FULL_BODY_HEIGHT - 8) / 2,
             (opacity shl 24) or 0xFFFFFF, false
         )
     }
@@ -258,7 +254,7 @@ object PlayerCardRenderer {
      * 从标准皮肤贴图中绘制全身正面（底层 + 覆盖层）
      */
     private fun blitFullBody(ctx: GuiGraphics, texture: Identifier, x: Int, y: Int) {
-        withPose(ctx, x.toFloat(), y.toFloat(), FULL_BODY_WIDTH / 16f, FULL_BODY_HEIGHT / 32f) {
+        withPose(ctx, x.toFloat(), y.toFloat(), L.FULL_BODY_WIDTH / 16f, L.FULL_BODY_HEIGHT / 32f) {
             // Head
             blitSkinPart(ctx, texture, 4, 0, 8, 8, 8f, 8f, 8, 8)
             blitSkinPart(ctx, texture, 4, 0, 8, 8, 40f, 8f, 8, 8)
@@ -314,7 +310,7 @@ object PlayerCardRenderer {
         val font = Minecraft.getInstance().font
         val nameColor = if (player.isAlive) (opacity shl 24) or COLOR_TEXT else (opacity shl 24) or 0x888888
         val scale = 0.6f  // 增大文字（从 0.5f 提升到 0.6f）
-        
+
         // 计算在缩放后能容纳的最大宽度
         val maxScaledWidth = minOf(L.NAME_MAX_WIDTH.toFloat(), width.toFloat()) / scale
         val displayName = if (font.width(player.name) > maxScaledWidth) {
@@ -396,7 +392,7 @@ object PlayerCardRenderer {
         val scale = 0.5f
         
         // 计算右下角位置（留出一些边距）
-        val margin = 2
+        val margin = L.HOTKEY_MARGIN
         val textWidth = font.width(hotkeyText)
         val scaledTextWidth = (textWidth * scale).toInt()
         val scaledTextHeight = (8 * scale).toInt()  // 字体高度约为 8
