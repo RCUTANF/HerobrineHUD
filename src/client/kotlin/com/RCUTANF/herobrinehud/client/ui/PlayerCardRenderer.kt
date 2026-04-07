@@ -17,10 +17,9 @@ import java.util.UUID
  * 玩家卡片渲染器
  *
  * 负责渲染单张玩家信息卡片（竖向布局），包含：
- *  - 顶部：头像（左）+ 主副手物品（右）
- *  - 头像下方：名称
- *  - 名称下方：心形+血量（左）和盔甲图标+盔甲值（右）横向并列（缩小60%）
- *  - 其下：四个护甲槽位（居中）
+ *  - 顶部：全身像（左）+ 主副手物品（右）
+ *  - 全身像上方：名称
+ *  - 主副手下方：心形+血量
  *  - 最下：效果徽章
  */
 object PlayerCardRenderer {
@@ -58,7 +57,7 @@ object PlayerCardRenderer {
         val config = HudConfig.data
 
         // 卡片背景：使用维度对应方块的纹理
-        renderCardBackground(ctx, cardX, cardY, teamColor, opacity)
+        renderCardBackground(ctx, cardX, cardY, opacity)
 
         if (ClientTeamData.isSpectating(player.uuid)) {
             renderCardSpectateHighlight(ctx, cardX, cardY, opacity)
@@ -78,7 +77,7 @@ object PlayerCardRenderer {
 
         // 1. 顶部：全身像 + 名称共用一个层次化背景框
         if (config.showAvatar) {
-            renderAvatarNameFrame(ctx, bodyX, cardY + NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity, teamColor)
+            renderAvatarNameFrame(ctx, bodyX, cardY + NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity)
             renderAvatar(ctx, player, bodyX, bodyY, opacity)
         }
 
@@ -92,10 +91,6 @@ object PlayerCardRenderer {
         val nameWidth = if (config.showAvatar) FULL_BODY_WIDTH else L.CARD_WIDTH
         val nameY = cardY + NAME_ABOVE_BODY_Y_OFFSET
         renderName(ctx, player, nameX, nameY, nameWidth, opacity)
-
-        // 3. 队伍名（名称下方）- 暂时不渲染
-        // val teamNameY = cardY + L.TEAM_NAME_Y_OFFSET
-        // renderTeamName(ctx, teamName, teamColor, nameX, teamNameY, opacity)
 
         // 4. 血量（主副手下方）
         if (config.showHealthNumber) {
@@ -144,10 +139,9 @@ object PlayerCardRenderer {
      * @param ctx    GuiGraphics 上下文
      * @param cardX  卡片左上角 X
      * @param cardY  卡片左上角 Y
-     * @param teamColor 队伍颜色（HEX 格式）
      * @param opacity 不透明度 (0-255)
      */
-    private fun renderCardBackground(ctx: GuiGraphics, cardX: Int, cardY: Int, teamColor: String, opacity: Int) {
+    private fun renderCardBackground(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
         val alpha = (opacity * 0.92f).toInt().coerceIn(0, 255) // rgba(23, 28, 36, 0.92)
         val bgColor = (alpha shl 24) or COLOR_PANEL_BG
 
@@ -163,17 +157,6 @@ object PlayerCardRenderer {
         // 绘制 Header 底部分隔线
         val headerBorderColor = (opacity shl 24) or COLOR_HEADER_BORDER
         ctx.fill(cardX, cardY + headerHeight - 1, cardX + L.CARD_WIDTH, cardY + headerHeight, headerBorderColor)
-
-        // 左侧重音线 (Accent Line)
-        // 获取与本地玩家的关系颜色（此处改为直接使用玩家队伍颜色）
-        val accentRgb = try {
-            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
-        } catch (_: Exception) {
-            0xAAAAAA
-        }
-        val accentColor = (opacity shl 24) or accentRgb
-        val accentWidth = 4
-        //ctx.fill(cardX, cardY, cardX + accentWidth, cardY + L.CARD_HEIGHT, accentColor)
 
         // 绘制卡片边框
         drawCardBorder(ctx, cardX, cardY, opacity)
@@ -201,7 +184,7 @@ object PlayerCardRenderer {
         ctx.fill(cardX + L.CARD_WIDTH - borderWidth, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, borderColor)
     }
 
-    private fun renderAvatarNameFrame(ctx: GuiGraphics, x: Int, nameY: Int, bodyY: Int, opacity: Int, teamColor: String) {
+    private fun renderAvatarNameFrame(ctx: GuiGraphics, x: Int, nameY: Int, bodyY: Int, opacity: Int) {
         val frameX = x - 1
         val frameY = nameY - 1
         val frameW = FULL_BODY_WIDTH + 2
@@ -213,9 +196,6 @@ object PlayerCardRenderer {
         val nameBg = ((opacity * 0.30f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BG
         val bodyBg = ((opacity * 0.45f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BG
         val borderColor = ((opacity * 0.58f).toInt().coerceIn(0, 255) shl 24) or COLOR_LINE_SOFT
-        val innerHighlight = ((opacity * 0.24f).toInt().coerceIn(0, 255) shl 24) or 0xFFFFFF
-        val sectionLine = ((opacity * 0.40f).toInt().coerceIn(0, 255) shl 24) or COLOR_HEADER_BORDER
-        val accentColor = ((opacity * 0.70f).toInt().coerceIn(0, 255) shl 24) or parseTeamColor(teamColor)
 
         ctx.fill(frameX, frameY, frameX + frameW, frameY + frameH, outerBg)
         ctx.fill(frameX + 1, frameY + 1, frameX + frameW - 1, splitY, nameBg)
@@ -226,13 +206,6 @@ object PlayerCardRenderer {
         ctx.fill(frameX, frameY + frameH - 1, frameX + frameW, frameY + frameH, borderColor)
         ctx.fill(frameX, frameY, frameX + 1, frameY + frameH, borderColor)
         ctx.fill(frameX + frameW - 1, frameY, frameX + frameW, frameY + frameH, borderColor)
-
-        // 内高光 + 区域分隔线，提升层次
-        //ctx.fill(frameX + 1, frameY + 1, frameX + frameW - 1, frameY + 2, innerHighlight)
-        //ctx.fill(frameX + 1, splitY, frameX + frameW - 1, splitY + 1, sectionLine)
-
-        // 左侧轻量队伍重音线
-        //ctx.fill(frameX, frameY + 1, frameX + 1, frameY + frameH - 1, accentColor)
     }
 
     private fun parseTeamColor(teamColor: String): Int = try {
@@ -242,7 +215,7 @@ object PlayerCardRenderer {
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  头像
+    //  全身像
     // ──────────────────────────────────────────────────────────────
 
     private fun renderAvatar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
@@ -252,10 +225,10 @@ object PlayerCardRenderer {
         val uuid = runCatching { UUID.fromString(player.uuid) }.getOrNull()
         if (uuid != null) {
             try {
-                val player = client.connection?.getPlayerInfo(uuid)
-                val skinTexture = player?.let {
+                val playerInfo = client.connection?.getPlayerInfo(uuid)
+                val skinTexture = playerInfo?.let {
                     client.skinManager
-                        .createLookup(player.profile, false)
+                        .createLookup(playerInfo.profile, false)
                 }
                     ?.get()
                     ?.body()
@@ -367,27 +340,6 @@ object PlayerCardRenderer {
     //  队伍名称
     // ──────────────────────────────────────────────────────────────
 
-    @Suppress("unused")
-    private fun renderTeamName(ctx: GuiGraphics, teamName: String, teamColor: String, x: Int, y: Int, opacity: Int) {
-        val font = Minecraft.getInstance().font
-        val rgb = try {
-            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
-        } catch (_: Exception) {
-            0xAAAAAA
-        }
-        val teamColorInt = (opacity shl 24) or rgb
-        val scale = 0.5f
-
-        withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
-            // 头像中心 X = x + L.AVATAR_SIZE / 2
-            // 将缩放后的文本中心对齐到头像中心
-            val textWidth = font.width(teamName)
-            val textX = (L.AVATAR_SIZE / 2f - textWidth * scale / 2f).toInt()
-            ctx.drawString(font, teamName, textX, 0, teamColorInt, false)
-        }
-
-    }
-
     /**
      * 在效果徽章位置渲染队伍名称（当没有效果时）
      * 使用队伍颜色，居中显示
@@ -395,11 +347,7 @@ object PlayerCardRenderer {
      */
     private fun renderTeamNameAtEffectPosition(ctx: GuiGraphics, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int, hotkeyNumber: Int? = null) {
         val font = Minecraft.getInstance().font
-        val rgb = try {
-            teamColor.trimStart('#').toInt(16) and 0xFFFFFF
-        } catch (_: Exception) {
-            0xAAAAAA
-        }
+        val rgb = parseTeamColor(teamColor)
         val teamColorInt = (opacity shl 24) or rgb
         val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
         val scale = 0.6f
@@ -462,31 +410,6 @@ object PlayerCardRenderer {
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  生命值条
-    // ──────────────────────────────────────────────────────────────
-
-    @Suppress("unused", "DEPRECATION")
-    private fun renderHealthBar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
-        val healthPercent = if (player.maxHealth > 0)
-            (player.health / player.maxHealth).coerceIn(0.0, 1.0) else 0.0
-
-        val barBg = (opacity / 2 shl 24) or 0x333333
-        val barFg = (opacity shl 24) or getHealthColor(healthPercent)
-
-        val barY = y + 1
-        ctx.fill(x, barY, x + L.HEALTH_BAR_WIDTH, barY + L.HEALTH_BAR_HEIGHT, barBg)
-        ctx.fill(x, barY, x + (L.HEALTH_BAR_WIDTH * healthPercent).toInt(), barY + L.HEALTH_BAR_HEIGHT, barFg)
-
-        if (HudConfig.data.showHealthNumber) {
-            val font = Minecraft.getInstance().font
-            val healthText = "${player.health.toInt()}/${player.maxHealth.toInt()}"
-            val textWidth = font.width(healthText)
-            val textX = x + (L.HEALTH_BAR_WIDTH - textWidth) / 2
-            ctx.drawString(font, healthText, textX, y, (opacity shl 24) or 0xFFFFFF, true)
-        }
-    }
-
-    // ──────────────────────────────────────────────────────────────
     //  血量行（主副手下方）
     // ──────────────────────────────────────────────────────────────
 
@@ -513,9 +436,9 @@ object PlayerCardRenderer {
     private fun renderHandIcons(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val eq = player.equipment
         // 主手在上方
-        renderItemSlotWithBorder(ctx, eq.mainHand, x, y, L.HAND_SLOT_SIZE, opacity)
+        renderItemSlotWithBorder(ctx, eq.mainHand, x, y, opacity)
         // 副手在下方（紧贴主手）
-        renderItemSlotWithBorder(ctx, eq.offHand, x, y + L.HAND_SLOT_SIZE + L.HAND_GAP, L.HAND_SLOT_SIZE, opacity)
+        renderItemSlotWithBorder(ctx, eq.offHand, x, y + L.HAND_SLOT_SIZE + L.HAND_GAP, opacity)
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -599,79 +522,10 @@ object PlayerCardRenderer {
     // ──────────────────────────────────────────────────────────────
 
     /**
-     * 渲染一个小尺寸物品槽位（SLOT_SIZE x SLOT_SIZE）
-     * 使用矩阵缩放将 16px 图标缩小
-     */
-    @Suppress("unused")
-    private fun renderSmallItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
-        // 背景
-        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
-        val bgColor = (bgAlpha shl 24) or 0x000000
-        ctx.fill(x, y, x + size, y + size, bgColor)
-
-        if (itemId == null) return
-        val stack = resolveItemStack(itemId) ?: return
-
-        // 缩放矩阵渲染
-        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
-            try {
-                ctx.renderItem(stack, 0, 0)
-            } catch (_: Exception) {
-                // 物品渲染异常时静默忽略
-            }
-        }
-    }
-
-    /**
-     * 渲染一个标准（14px）物品槽位，用于主副手
-     */
-    @Suppress("unused")
-    private fun renderItemSlot(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
-        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
-        val bgColor = (bgAlpha shl 24) or 0x000000
-        ctx.fill(x, y, x + size, y + size, bgColor)
-
-        if (itemId == null) return
-        val stack = resolveItemStack(itemId) ?: return
-
-        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
-            try {
-                ctx.renderItem(stack, 0, 0)
-            } catch (_: Exception) {
-                // 物品渲染异常时静默忽略
-            }
-        }
-    }
-
-    /**
-     * 渲染带白色外框的小尺寸物品槽位（用于盔甲槽位）
-     */
-    private fun renderSmallItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
-        // 背景
-        val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
-        val bgColor = (bgAlpha shl 24) or 0x000000
-        ctx.fill(x, y, x + size, y + size, bgColor)
-
-        // 绘制细边框
-        drawThinBorder(ctx, x, y, size, opacity)
-
-        if (itemId == null) return
-        val stack = resolveItemStack(itemId) ?: return
-
-        // 缩放矩阵渲染物品
-        withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
-            try {
-                ctx.renderItem(stack, 0, 0)
-            } catch (_: Exception) {
-                // 物品渲染异常时静默忽略
-            }
-        }
-    }
-
-    /**
      * 渲染带白色外框的标准物品槽位（用于主副手）
      */
-    private fun renderItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, size: Int, opacity: Int) {
+    private fun renderItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, opacity: Int) {
+        val size = L.HAND_SLOT_SIZE
         // 背景
         val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
         val bgColor = (bgAlpha shl 24) or 0x000000
@@ -707,16 +561,6 @@ object PlayerCardRenderer {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    //  辅助：生命值颜色
-    // ──────────────────────────────────────────────────────────────
-
-    private fun getHealthColor(percent: Double): Int = when {
-        percent > 0.6 -> 0x55FF55
-        percent > 0.3 -> 0xFFFF55
-        percent > 0.0 -> 0xFF5555
-        else -> 0x555555
-    }
 
     // ──────────────────────────────────────────────────────────────
     //  辅助：渲染旁观高亮框
