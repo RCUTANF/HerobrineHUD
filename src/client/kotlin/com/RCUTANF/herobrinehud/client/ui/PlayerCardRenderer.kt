@@ -65,15 +65,25 @@ object PlayerCardRenderer {
         // 3. 血量（主副手下方）
         // 4. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
 
-        val avatarX = cardX + L.AVATAR_X_OFFSET
-        val bodyX = avatarX + (L.AVATAR_SIZE - L.FULL_BODY_WIDTH) / 2
-        val bodyY = cardY + L.FULL_BODY_Y_OFFSET
+        val bodyAreaX = cardX + L.AVATAR_X_OFFSET
+        val bodyAreaY = cardY + L.FULL_BODY_Y_OFFSET
+        val bodyX = bodyAreaX + (L.FULL_BODY_AREA_WIDTH - L.FULL_BODY_WIDTH) / 2
+        val bodyY = bodyAreaY + (L.FULL_BODY_AREA_HEIGHT - L.FULL_BODY_HEIGHT) / 2
         val handX = cardX + L.HAND_X_OFFSET
         val handY = cardY + L.HAND_Y_OFFSET
 
         // 1. 顶部：全身像 + 名称共用一个层次化背景框
+        val frameNameY = cardY + L.NAME_ABOVE_BODY_Y_OFFSET
         if (config.showAvatar) {
-            renderAvatarNameFrame(ctx, bodyX, cardY + L.NAME_ABOVE_BODY_Y_OFFSET, bodyY, opacity)
+            renderAvatarNameFrame(
+                ctx,
+                bodyAreaX,
+                L.FULL_BODY_AREA_WIDTH,
+                bodyAreaY,
+                L.FULL_BODY_AREA_HEIGHT,
+                frameNameY,
+                opacity
+            )
             renderAvatar(ctx, player, bodyX, bodyY, opacity)
         }
 
@@ -83,9 +93,9 @@ object PlayerCardRenderer {
         }
 
         // 2. 名称（全身像上方，占据整个卡片宽度，居中）
-        val nameX = if (config.showAvatar) bodyX else cardX
-        val nameWidth = if (config.showAvatar) L.FULL_BODY_WIDTH else L.CARD_WIDTH
-        val nameY = cardY + L.NAME_ABOVE_BODY_Y_OFFSET
+        val nameX = if (config.showAvatar) bodyAreaX else cardX
+        val nameWidth = if (config.showAvatar) L.FULL_BODY_AREA_WIDTH else L.CARD_WIDTH
+        val nameY = if (config.showAvatar) frameNameY + 2 else frameNameY
         renderName(ctx, player, nameX, nameY, nameWidth, opacity)
 
         // 4. 血量（主副手下方）
@@ -180,12 +190,20 @@ object PlayerCardRenderer {
         ctx.fill(cardX + L.CARD_WIDTH - borderWidth, cardY, cardX + L.CARD_WIDTH, cardY + L.CARD_HEIGHT, borderColor)
     }
 
-    private fun renderAvatarNameFrame(ctx: GuiGraphics, x: Int, nameY: Int, bodyY: Int, opacity: Int) {
-        val frameX = x - 1
+    private fun renderAvatarNameFrame(
+        ctx: GuiGraphics,
+        areaX: Int,
+        areaWidth: Int,
+        areaY: Int,
+        areaHeight: Int,
+        nameY: Int,
+        opacity: Int
+    ) {
+        val frameX = areaX - 1
         val frameY = nameY - 1
-        val frameW = L.FULL_BODY_WIDTH + 2
-        val frameH = bodyY + L.FULL_BODY_HEIGHT - nameY + 2
-        val splitY = bodyY - 1
+        val frameW = areaWidth + 2
+        val frameH = areaY + areaHeight - nameY + 2
+        val splitY = areaY - 1
 
         // 分层背景：顶部名字区更亮，主体预览区更深，接近 HTML 里 header + panel 的层次感
         val outerBg = ((opacity * 0.24f).toInt().coerceIn(0, 255) shl 24) or COLOR_PANEL_BG
@@ -309,7 +327,7 @@ object PlayerCardRenderer {
     private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, width: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val nameColor = if (player.isAlive) (opacity shl 24) or COLOR_TEXT else (opacity shl 24) or 0x888888
-        val scale = 0.6f  // 增大文字（从 0.5f 提升到 0.6f）
+        val scale = 0.4f  // 增大文字（从 0.5f 提升到 0.6f）
 
         // 计算在缩放后能容纳的最大宽度
         val maxScaledWidth = minOf(L.NAME_MAX_WIDTH.toFloat(), width.toFloat()) / scale

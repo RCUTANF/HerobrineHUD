@@ -14,8 +14,8 @@ package com.RCUTANF.herobrinehud.client.ui
 object CardLayout {
 
     // ── 卡片整体 ──────────────────────────────────────────────
-    const val CARD_WIDTH = 30         // 窄卡片（头像16 + 主副手8 + 边距）
-    const val CARD_HEIGHT = 53       // 更紧凑：继续回收盔甲移除后的 2px 高度
+    const val CARD_WIDTH = 35         // 卡片加宽 5px
+    const val CARD_HEIGHT = 58       // 更紧凑：继续回收盔甲移除后的 2px 高度
     const val CARD_GAP = 1            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
@@ -26,13 +26,15 @@ object CardLayout {
     const val AVATAR_Y_OFFSET = 3     // 头像在卡片内的 Y 偏移（顶部）
 
     // ── 全身像区域 ──────────────────────────────────────────────
-    const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度
-    const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度
-    const val FULL_BODY_Y_OFFSET = 9        // 全身像在卡片内的 Y 偏移
+    const val FULL_BODY_AREA_WIDTH = 20     // 全身像区域宽度（仅布局区域，不影响全身像实际渲染尺寸）
+    const val FULL_BODY_AREA_HEIGHT = 35    // 全身像区域高度（仅布局区域，不影响全身像实际渲染尺寸）
+    const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度（保持不变）
+    const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度（保持不变）
+    const val FULL_BODY_Y_OFFSET = 9        // 全身像区域在卡片内的 Y 偏移
     const val NAME_ABOVE_BODY_Y_OFFSET = 2  // 名称相对卡片顶部的 Y 偏移
 
     const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
-    const val HAND_X_OFFSET = 20      // 主副手起始 X（头像右侧）
+    const val HAND_X_OFFSET = 25      // 主副手起始 X（卡片加宽后保持右侧边距）
     const val HAND_Y_OFFSET = 2       // 主手 Y 偏移（与头像顶部对齐）
     const val HAND_GAP = 1            // 主副手之间的间距（紧贴）
 
@@ -42,7 +44,7 @@ object CardLayout {
     const val NAME_MAX_WIDTH = 28     // 名称最大宽度（占据整个卡片宽度 - 小边距）
 
     // ── 队伍名称区域 ──────────────────────────────────────────
-    const val TEAM_NAME_Y_OFFSET = 30 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
+    const val TEAM_NAME_Y_OFFSET = 35 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
 
     // ── 血量区域（放在主副手槽位下方）──────────────────────────
@@ -59,7 +61,7 @@ object CardLayout {
     const val SLOT_GAP = 1            // 槽位之间的间距
 
     // ── 效果徽章区域 ──────────────────────────────────────────
-    const val EFFECTS_Y = 43          // 效果徽章起始 Y 偏移（血量下方）
+    const val EFFECTS_Y = 48          // 效果徽章起始 Y 偏移（血量下方）
     const val EFFECTS_X_PADDING = 2   // 效果徽章区域左侧内边距
     const val EFFECTS_HORIZONTAL_PADDING = 4 // 效果徽章区域总水平内边距（左右各 2）
     const val EFFECT_BADGE_SIZE = 5   // 效果徽章大小（缩小以适应窄卡片）
