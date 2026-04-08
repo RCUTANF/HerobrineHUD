@@ -4,13 +4,24 @@ import com.RCUTANF.herobrinehud.client.animation.PlayerAnimationManager
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.data.PlayerInfo
+import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.player.RemotePlayer
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.state.EntityRenderState
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
+import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.Pose
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import org.joml.Quaternionf
+import org.joml.Vector3f
 import java.util.UUID
 
 /**
@@ -25,6 +36,7 @@ import java.util.UUID
 object PlayerCardRenderer {
 
     private val L = CardLayout
+    private val previewPlayers = mutableMapOf<UUID, RemotePlayer>()
 
     // ──────────────────────────────────────────────────────────────
     // 新增：Neo-Pixel 配色常量 (RGB)
@@ -233,6 +245,84 @@ object PlayerCardRenderer {
     // ──────────────────────────────────────────────────────────────
 
     private fun renderAvatar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+        if (renderAvatar3D(ctx, player, x, y)) {
+            return
+        }
+
+        renderAvatarFallback2D(ctx, player, x, y, opacity)
+    }
+
+    /**
+     * 使用简化版实体渲染：固定正面朝向，不跟随鼠标。
+     */
+    private fun renderAvatar3D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int): Boolean {
+        val preview = getOrCreatePreviewPlayer(player) ?: return false
+
+        return runCatching {
+            val rotation = Quaternionf().rotateZ(Math.PI.toFloat())
+            val cameraAngle = Quaternionf()
+            val state = extractRenderState(preview)
+
+            if (state is LivingEntityRenderState) {
+                state.bodyRot = 180.0F
+                state.yRot = 0.0F
+                state.xRot = 0.0F
+                if (state.pose == Pose.FALL_FLYING) {
+                    state.xRot = 0.0F
+                }
+
+                state.boundingBoxWidth /= state.scale
+                state.boundingBoxHeight /= state.scale
+                state.boundingBoxWidth *= 0.88F
+                state.scale = 1.0F
+            }
+
+            val translation = Vector3f(0.0F, state.boundingBoxHeight / 2.0F + 0.01F, 0.0F)
+            val scale = (L.FULL_BODY_HEIGHT * 0.6f).coerceAtLeast(1f)
+            val clipTop = y - 1
+            ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, y + L.FULL_BODY_HEIGHT)
+        }.isSuccess
+    }
+
+    private fun getOrCreatePreviewPlayer(player: PlayerInfo): RemotePlayer? {
+        val client = Minecraft.getInstance()
+        val level = client.level ?: return null
+        val uuid = runCatching { UUID.fromString(player.uuid) }.getOrNull() ?: return null
+
+        val profileName = player.name.takeIf { it.isNotBlank() } ?: "Player"
+        val remote = previewPlayers[uuid]?.takeIf { it.level() == level }
+            ?: RemotePlayer(level, GameProfile(uuid, profileName)).also { previewPlayers[uuid] = it }
+
+        applyEquipment(remote, player)
+        remote.setOnGround(true)
+        remote.setShiftKeyDown(false)
+        remote.isSprinting = false
+        remote.isSwimming = false
+        return remote
+    }
+
+    private fun applyEquipment(remote: RemotePlayer, player: PlayerInfo) {
+        val eq = player.equipment
+        remote.setItemSlot(EquipmentSlot.HEAD, resolveItemStack(eq.helmet) ?: ItemStack.EMPTY)
+        remote.setItemSlot(EquipmentSlot.CHEST, resolveItemStack(eq.chestplate) ?: ItemStack.EMPTY)
+        remote.setItemSlot(EquipmentSlot.LEGS, resolveItemStack(eq.leggings) ?: ItemStack.EMPTY)
+        remote.setItemSlot(EquipmentSlot.FEET, resolveItemStack(eq.boots) ?: ItemStack.EMPTY)
+        remote.setItemSlot(EquipmentSlot.MAINHAND, resolveItemStack(eq.mainHand) ?: ItemStack.EMPTY)
+        remote.setItemSlot(EquipmentSlot.OFFHAND, resolveItemStack(eq.offHand) ?: ItemStack.EMPTY)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun extractRenderState(entity: LivingEntity): EntityRenderState {
+        val dispatcher: EntityRenderDispatcher = Minecraft.getInstance().entityRenderDispatcher
+        val renderer = dispatcher.getRenderer(entity) as EntityRenderer<LivingEntity, EntityRenderState>
+        val state = renderer.createRenderState(entity, 1.0F)
+        state.lightCoords = 15728880
+        state.shadowPieces.clear()
+        state.outlineColor = 0
+        return state
+    }
+
+    private fun renderAvatarFallback2D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val client = Minecraft.getInstance()
 
         // 优先：从本地 SkinManager 获取并绘制全身像
@@ -616,7 +706,8 @@ object PlayerCardRenderer {
      * 将物品 ID 字符串解析为 ItemStack
      * 例如 "minecraft:diamond_helmet" -> ItemStack(Items.DIAMOND_HELMET)
      */
-    private fun resolveItemStack(itemId: String): ItemStack? {
+    private fun resolveItemStack(itemId: String?): ItemStack? {
+        if (itemId.isNullOrBlank()) return null
         return try {
             val loc = Identifier.parse(itemId)
             val item = BuiltInRegistries.ITEM.getOptional(loc).orElse(null) ?: return null
