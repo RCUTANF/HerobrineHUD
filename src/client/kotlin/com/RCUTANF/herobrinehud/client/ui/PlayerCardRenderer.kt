@@ -96,7 +96,7 @@ object PlayerCardRenderer {
         val nameX = if (config.showAvatar) bodyAreaX else cardX
         val nameWidth = if (config.showAvatar) L.FULL_BODY_AREA_WIDTH else L.CARD_WIDTH
         val nameY = if (config.showAvatar) frameNameY + 2 else frameNameY
-        renderName(ctx, player, nameX, nameY, nameWidth, opacity)
+        renderName(ctx, player, teamColor, nameX, nameY, nameWidth, opacity)
 
         // 4. 血量（主副手下方）
         if (config.showHealthNumber) {
@@ -162,7 +162,7 @@ object PlayerCardRenderer {
 
         // 绘制 Header 底部分隔线
         val headerBorderColor = (opacity shl 24) or COLOR_HEADER_BORDER
-        ctx.fill(cardX, cardY + headerHeight - 1, cardX + L.CARD_WIDTH, cardY + headerHeight, headerBorderColor)
+        //ctx.fill(cardX, cardY + headerHeight - 1, cardX + L.CARD_WIDTH, cardY + headerHeight, headerBorderColor)
 
         // 绘制卡片边框
         drawCardBorder(ctx, cardX, cardY, opacity)
@@ -324,9 +324,9 @@ object PlayerCardRenderer {
     //  名称
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderName(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, width: Int, opacity: Int) {
+    private fun renderName(ctx: GuiGraphics, player: PlayerInfo, teamColor: String, x: Int, y: Int, width: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
-        val nameColor = if (player.isAlive) (opacity shl 24) or COLOR_TEXT else (opacity shl 24) or 0x888888
+        val nameColor = (opacity shl 24) or parseTeamColor(teamColor)
         val scale = 0.4f  // 增大文字（从 0.5f 提升到 0.6f）
 
         // 计算在缩放后能容纳的最大宽度
