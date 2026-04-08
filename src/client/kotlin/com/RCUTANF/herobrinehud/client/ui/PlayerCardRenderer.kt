@@ -279,8 +279,10 @@ object PlayerCardRenderer {
 
             val translation = Vector3f(0.0F, state.boundingBoxHeight / 2.0F + 0.01F, 0.0F)
             val scale = (L.FULL_BODY_HEIGHT * 0.6f).coerceAtLeast(1f)
-            val clipTop = y - 1
-            ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, y + L.FULL_BODY_HEIGHT)
+            // Add a little vertical clip padding to avoid trimming the head layer.
+            val clipTop = y - 3
+            val clipBottom = y + L.FULL_BODY_HEIGHT + 1
+            ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, clipBottom)
         }.isSuccess
     }
 
@@ -615,7 +617,7 @@ object PlayerCardRenderer {
             if (effect.amplifier >= 1) {
                 val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
                 // 缩小罗马数字渲染
-                val numScale = 0.28f
+                val numScale = 0.2f
                 // 计算右上角位置
                 val romanWidth = (font.width(roman) * numScale).toInt().coerceAtLeast(1)
                 val romanHeight = (8 * numScale).toInt().coerceAtLeast(3)
