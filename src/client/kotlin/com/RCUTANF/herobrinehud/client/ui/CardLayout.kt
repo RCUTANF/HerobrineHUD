@@ -54,7 +54,7 @@ object CardLayout {
     const val FOOD_ICON_SIZE = 7      // 饱食度图标大小
     const val ICON_TEXT_GAP = 2       // 图标与数字之间的间距
     const val STATS_CENTER_X_OFFSET = 12 // 统计行中心点 X（用于居中血量/饱食度）
-    const val DIMENSION_GAP_FROM_HEALTH = 2 // 维度方块与血量文本的间距
+    const val DIMENSION_GAP_FROM_HEALTH = 4 // 维度方块与血量文本的间距
 
     // ── 护甲槽位区域（已停用） ─────────────────────────────────
     const val ARMOR_SLOTS_Y = 40      // 已停用：保留常量避免其他引用报错

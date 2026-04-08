@@ -36,6 +36,9 @@ object PlayerCardRenderer {
     private const val COLOR_HEADER_BG = 0x0D1015
     private const val COLOR_HEADER_BORDER = 0x2E3744
     private const val COLOR_LINE_SOFT = 0x576274
+    private const val COLOR_BADGE_BG = 0x141B25
+    private const val COLOR_BADGE_BORDER = 0x7E90A8
+    private const val COLOR_BADGE_TEXT_BG = 0x0A0F16
 
     /**
      * 渲染完整的玩家卡片（竖向布局）
@@ -500,15 +503,21 @@ object PlayerCardRenderer {
         for ((index, effect) in player.effects.take(maxBadges).withIndex()) {
             val by = y + index * badgeStep
 
-            // 绘制外框背景（深色半透明）
-            val frameBg = ((opacity * 3 / 4) shl 24) or 0x222222
-            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 1, by + L.EFFECT_BADGE_SIZE + 1, frameBg)
+            // 三层徽章背景：投影 -> 主底板 -> 边框，让图标在复杂场景下更突出
+            val shadowColor = ((opacity * 0.36f).toInt().coerceIn(0, 255) shl 24)
+            val panelColor = ((opacity * 0.92f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BG
+            val borderColor = ((opacity * 0.95f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BORDER
+
+            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 2, by + L.EFFECT_BADGE_SIZE + 2, shadowColor)
+            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 1, by + L.EFFECT_BADGE_SIZE + 1, panelColor)
+            drawThinBorderWithColor(ctx, x - 1, by - 1, L.EFFECT_BADGE_SIZE + 2, borderColor)
 
             // 获取效果图标的 Identifier
             val iconId = getEffectIcon(effect.identifier)
 
             // 使用 blitSprite 渲染效果图标
-            withPose(ctx, x.toFloat(), by.toFloat(), L.EFFECT_BADGE_SIZE / 18f, L.EFFECT_BADGE_SIZE / 18f) {
+            val iconScale = (L.EFFECT_BADGE_SIZE + 1f) / 18f
+            withPose(ctx, x - 0.5f, by - 0.5f, iconScale, iconScale) {
                 ctx.blitSprite(RenderPipelines.GUI_TEXTURED, iconId, 0, 0, 18, 18)
             }
 
@@ -516,11 +525,22 @@ object PlayerCardRenderer {
             if (effect.amplifier >= 1) {
                 val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
                 // 缩小罗马数字渲染
-                val numScale = 0.35f  // 进一步缩小罗马数字
+                val numScale = 0.28f
                 // 计算右上角位置
-                val romanWidth = (font.width(roman) * numScale).toInt()
-                val romanX = x + L.EFFECT_BADGE_SIZE - romanWidth
+                val romanWidth = (font.width(roman) * numScale).toInt().coerceAtLeast(1)
+                val romanHeight = (8 * numScale).toInt().coerceAtLeast(3)
+                val romanX = x + L.EFFECT_BADGE_SIZE - romanWidth - 1
                 val romanY = by - 1
+
+                val numeralBg = ((opacity * 0.80f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_TEXT_BG
+                ctx.fill(
+                    romanX - 1,
+                    romanY,
+                    romanX + romanWidth + 1,
+                    romanY + romanHeight + 1,
+                    numeralBg
+                )
+
                 withPose(ctx, romanX.toFloat(), romanY.toFloat(), numScale, numScale) {
                     ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
                 }
@@ -650,6 +670,10 @@ object PlayerCardRenderer {
      */
     private fun drawThinBorder(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
         val borderColor = (opacity shl 24) or COLOR_LINE_SOFT // Line Soft
+        drawThinBorderWithColor(ctx, x, y, size, borderColor)
+    }
+
+    private fun drawThinBorderWithColor(ctx: GuiGraphics, x: Int, y: Int, size: Int, borderColor: Int) {
         // 使用缩放到 0.5 来绘制更细的边框
         withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
             val scaledSize = size * 2
