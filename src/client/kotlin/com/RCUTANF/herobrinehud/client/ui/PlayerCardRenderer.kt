@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import kotlin.math.ceil
 import java.util.UUID
 
 /**
@@ -616,22 +617,25 @@ object PlayerCardRenderer {
             // 右上角渲染罗马数字等级（amplifier >= 1 时显示，即 II 级及以上）
             if (effect.amplifier >= 1) {
                 val roman = toRomanNumeral(effect.amplifier + 1)  // amplifier 0 = Level I, 1 = Level II, etc.
-                // 缩小罗马数字渲染
                 val numScale = 0.2f
-                // 计算右上角位置
-                val romanWidth = (font.width(roman) * numScale).toInt().coerceAtLeast(1)
-                val romanHeight = (8 * numScale).toInt().coerceAtLeast(3)
-                val romanX = x + L.EFFECT_BADGE_SIZE - romanWidth - 1
-                val romanY = by - 1
+                val scaledTextWidth = ceil(font.width(roman) * numScale).toInt().coerceAtLeast(1)
+                val scaledTextHeight = ceil(font.lineHeight * numScale).toInt().coerceAtLeast(1)
+                // Align to the badge outer frame so the numeral appears truly top-right.
+                val badgeLeft = x - 1
+                val badgeTop = by - 1
+                val badgeRight = x + L.EFFECT_BADGE_SIZE + 1
+                val badgeBottom = by + L.EFFECT_BADGE_SIZE + 1
+                val inset = 0
+                val romanX = (badgeRight - scaledTextWidth - inset).coerceAtLeast(badgeLeft + inset)
+                val romanY = (badgeTop + inset).coerceAtMost(badgeBottom - scaledTextHeight - inset)
 
                 val numeralBg = ((opacity * 0.80f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_TEXT_BG
-                ctx.fill(
-                    romanX - 1,
-                    romanY,
-                    romanX + romanWidth + 1,
-                    romanY + romanHeight + 1,
-                    numeralBg
-                )
+                val bgPadX = 0
+                val bgLeft = (romanX - bgPadX).coerceAtLeast(badgeLeft)
+                val bgTop = romanY
+                val bgRight = (romanX + scaledTextWidth + bgPadX).coerceAtMost(badgeRight)
+                val bgBottom = (romanY + scaledTextHeight).coerceAtMost(badgeBottom)
+                ctx.fill(bgLeft, bgTop, bgRight, bgBottom, numeralBg)
 
                 withPose(ctx, romanX.toFloat(), romanY.toFloat(), numScale, numScale) {
                     ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
