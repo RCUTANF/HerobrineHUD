@@ -47,31 +47,32 @@ object CardLayout {
     const val TEAM_NAME_Y_OFFSET = 35 // 队伍名称在卡片内的 Y 偏移（暂时不使用）
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
 
-    // ── 血量区域（放在主副手槽位下方）──────────────────────────
-    const val HEALTH_ARMOR_Y = 22     // 血量起始 Y 偏移（主副手下方）
-    const val HEART_ICON_SIZE = 9     // 心形图标大小
-    const val ARMOR_ICON_SIZE = 9     // 护甲图标大小
+    // ── 血量/饱食度区域（放在全身像下方）────────────────────────
+    const val HEALTH_Y_OFFSET = 49    // 血量行起始 Y 偏移（全身像下方）
+    const val FOOD_Y_OFFSET = 52      // 饱食度行起始 Y 偏移（血量下方）
+    const val HEART_ICON_SIZE = 7     // 心形图标大小
+    const val FOOD_ICON_SIZE = 7      // 饱食度图标大小
     const val ICON_TEXT_GAP = 2       // 图标与数字之间的间距
-    const val HEALTH_X_OFFSET = 2     // 血量（心形）起始 X（已废弃，现在居中）
-    const val ARMOR_X_OFFSET = 32     // 盔甲值起始 X（已废弃，现在居中）
+    const val STATS_CENTER_X_OFFSET = 12 // 统计行中心点 X（用于居中血量/饱食度）
+    const val DIMENSION_GAP_FROM_HEALTH = 2 // 维度方块与血量文本的间距
 
     // ── 护甲槽位区域（已停用） ─────────────────────────────────
     const val ARMOR_SLOTS_Y = 40      // 已停用：保留常量避免其他引用报错
     const val SLOT_SIZE = 6           // 装备槽位大小（缩小以适应窄卡片）
     const val SLOT_GAP = 1            // 槽位之间的间距
 
-    // ── 效果徽章区域 ──────────────────────────────────────────
-    const val EFFECTS_Y = 48          // 效果徽章起始 Y 偏移（血量下方）
-    const val EFFECTS_X_PADDING = 2   // 效果徽章区域左侧内边距
-    const val EFFECTS_HORIZONTAL_PADDING = 4 // 效果徽章区域总水平内边距（左右各 2）
+    // ── 效果徽章区域（主副手下方右侧竖向排列）───────────────────
+    const val EFFECTS_X = 26          // 徽章列 X 偏移（位于主副手区域中线）
+    const val EFFECTS_START_Y = 21    // 徽章列起始 Y（主副手槽位下方）
     const val EFFECT_BADGE_SIZE = 5   // 效果徽章大小（缩小以适应窄卡片）
-    const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距
-
-    // ── 快捷键区域 ────────────────────────────────────────────
-    const val HOTKEY_MARGIN = 2       // 右下角快捷键与边缘的距离
+    const val EFFECT_BADGE_GAP = 1    // 效果徽章之间的间距（竖向）
 
     // ── 维度图标尺寸 ──────────────────────────────────────────
     const val DIM_BADGE_ICON_SIZE = 10    // 维度图标渲染大小（像素，与护甲槽位一致）
+
+    // ── 快捷键编号（右下角）────────────────────────────────────
+    const val HOTKEY_MARGIN_RIGHT = 2     // 快捷键编号右侧边距
+    const val HOTKEY_MARGIN_BOTTOM = 2    // 快捷键编号底部边距
 
     // ── 维度图标枚举 ──────────────────────────────────────────
     /**

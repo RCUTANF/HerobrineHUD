@@ -62,8 +62,8 @@ object PlayerCardRenderer {
         // 竖向布局：
         // 1. 顶部：全身像
         // 2. 名称（全身像上方，占据整个卡片宽度，居中）
-        // 3. 血量（主副手下方）
-        // 4. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
+        // 3. 血量与饱食度（全身像下方）
+        // 4. 效果徽章（全身像右方，主副手下方竖向排列）
 
         val bodyAreaX = cardX + L.AVATAR_X_OFFSET
         val bodyAreaY = cardY + L.FULL_BODY_Y_OFFSET
@@ -98,29 +98,26 @@ object PlayerCardRenderer {
         val nameY = if (config.showAvatar) frameNameY + 2 else frameNameY
         renderName(ctx, player, teamColor, nameX, nameY, nameWidth, opacity)
 
-        // 4. 血量（主副手下方）
+        // 4. 血量（全身像下方，独占原统计区域）
         if (config.showHealthNumber) {
-            val healthArmorY = cardY + L.HEALTH_ARMOR_Y
-            renderHealthValueBelowHands(ctx, player, handX, healthArmorY, opacity)
+            val statsCenterX = cardX + L.STATS_CENTER_X_OFFSET
+            val healthY = cardY + L.HEALTH_Y_OFFSET
+            renderHealthValue(ctx, player, statsCenterX, healthY, opacity, config.showDimension)
         }
 
         // 护甲槽位已移除，为全身像留出更大空间
 
-        // 5. 效果徽章（底部，居中排列）或队伍名称（当没有效果时）
-        val effectsY = cardY + L.EFFECTS_Y
+        // 5. 效果徽章（全身像右方，主副手下方竖向排列）
         if (config.showEffects && player.effects.isNotEmpty()) {
-            val effectsX = cardX + L.EFFECTS_X_PADDING
-            val availableWidth = L.CARD_WIDTH - L.EFFECTS_HORIZONTAL_PADDING
-            renderEffectBadges(ctx, player, effectsX, effectsY, availableWidth, opacity)
-            // 当有效果时，在卡片右下角绘制快捷键编号
-            if (hotkeyNumber != null) {
-                renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, cardX, cardY, opacity)
-            }
-        } else {
-            // 当没有效果时，在效果徽章的位置绘制队伍名称（带快捷键编号前缀）
-            renderTeamNameAtEffectPosition(ctx, teamName, teamColor, cardX, effectsY, opacity, hotkeyNumber)
+            val effectsX = cardX + L.EFFECTS_X
+            val effectsY = cardY + L.EFFECTS_START_Y
+            renderEffectBadgesVertical(ctx, player, effectsX, effectsY, opacity)
         }
-        
+
+        if (hotkeyNumber != null) {
+            renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, cardX, cardY, opacity)
+        }
+
         // 7. 渲染玩家变化动画（在所有内容之上）
         renderPlayerAnimations(ctx, player, cardX, cardY, opacity)
     }
@@ -216,9 +213,9 @@ object PlayerCardRenderer {
         ctx.fill(frameX + 1, splitY, frameX + frameW - 1, frameY + frameH - 1, bodyBg)
 
         // 细淡外边框
-        ctx.fill(frameX, frameY, frameX + frameW, frameY + 1, borderColor)
+        //ctx.fill(frameX, frameY, frameX + frameW, frameY + 1, borderColor)
         ctx.fill(frameX, frameY + frameH - 1, frameX + frameW, frameY + frameH, borderColor)
-        ctx.fill(frameX, frameY, frameX + 1, frameY + frameH, borderColor)
+        //ctx.fill(frameX, frameY, frameX + 1, frameY + frameH, borderColor)
         ctx.fill(frameX + frameW - 1, frameY, frameX + frameW, frameY + frameH, borderColor)
     }
 
@@ -373,11 +370,11 @@ object PlayerCardRenderer {
             } else {
                 teamName
             }
-            
+
             // 将文本居中对齐到卡片中心
             val textWidth = font.width(displayText)
             val textX = (L.CARD_WIDTH / 2f - textWidth * scale / 2f).toInt()
-            
+
             // 如果有快捷键编号，分段渲染（编号用黄色，队伍名用队伍颜色）
             if (hotkeyNumber != null) {
                 val hotkeyText = "[$hotkeyNumber] "
@@ -407,19 +404,16 @@ object PlayerCardRenderer {
         val font = Minecraft.getInstance().font
         val hotkeyText = "[$hotkeyNumber]"
         val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
-        val scale = 0.5f
-        
-        // 计算右下角位置（留出一些边距）
-        val margin = L.HOTKEY_MARGIN
+        val scale = 0.45f
+
         val textWidth = font.width(hotkeyText)
         val scaledTextWidth = (textWidth * scale).toInt()
-        val scaledTextHeight = (8 * scale).toInt()  // 字体高度约为 8
-        
-        val x = cardX + L.CARD_WIDTH - scaledTextWidth - margin
-        val y = cardY + L.CARD_HEIGHT - scaledTextHeight - margin
+        val scaledTextHeight = (8 * scale).toInt()
+        val x = cardX + L.CARD_WIDTH - scaledTextWidth - L.HOTKEY_MARGIN_RIGHT
+        val y = cardY + L.CARD_HEIGHT - scaledTextHeight - L.HOTKEY_MARGIN_BOTTOM
 
         withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
-            ctx.drawString(font, hotkeyText, 0, 0, hotkeyColor, true)  // 使用阴影增强可读性
+            ctx.drawString(font, hotkeyText, 0, 0, hotkeyColor, true)
         }
     }
 
@@ -427,21 +421,58 @@ object PlayerCardRenderer {
     //  血量行（主副手下方）
     // ──────────────────────────────────────────────────────────────
 
-    // 仅保留血量，盔甲信息不再渲染
-    private fun renderHealthValueBelowHands(ctx: GuiGraphics, player: PlayerInfo, handX: Int, y: Int, opacity: Int) {
+    // 仅保留血量与饱食度数值，盔甲信息不再渲染
+    private fun renderHealthValue(ctx: GuiGraphics, player: PlayerInfo, centerX: Int, y: Int, opacity: Int, showDimension: Boolean) {
         val font = Minecraft.getInstance().font
         val iconSize = L.HEART_ICON_SIZE
+        val dimensionSize = L.DIM_BADGE_ICON_SIZE
         val scale = 0.6f
+        val healthText = "${player.health.toInt()}"
+        val dimensionItem = if (showDimension) {
+            player.dimension
+                ?.let(CardLayout.DimensionIcon::fromDimensionId)
+                ?.blockItemId
+                ?.let(::resolveItemStack)
+        } else {
+            null
+        }
 
-        withPose(ctx, handX.toFloat(), y.toFloat(), scale, scale) {
-            val healthText = "${player.health.toInt()}"
+        withPose(ctx, centerX.toFloat(), y.toFloat(), scale, scale) {
             val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
-            val leftX = 0
+            val healthWidth = iconSize + L.ICON_TEXT_GAP + font.width(healthText)
+            val rowWidth = healthWidth + if (dimensionItem != null) L.DIMENSION_GAP_FROM_HEALTH + dimensionSize else 0
+            val leftX = -(rowWidth / 2)
 
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
             ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_HP, true)
+
+            if (dimensionItem != null) {
+                val dimX = leftX + healthWidth + L.DIMENSION_GAP_FROM_HEALTH
+                val dimY = (iconSize - dimensionSize) / 2
+                withPose(ctx, dimX.toFloat(), dimY.toFloat(), dimensionSize / 16f, dimensionSize / 16f) {
+                    ctx.renderItem(dimensionItem, 0, 0)
+                }
+            }
         }
     }
+
+//    private fun renderFoodValue(ctx: GuiGraphics, player: PlayerInfo, centerX: Int, y: Int, opacity: Int) {
+//        val font = Minecraft.getInstance().font
+//        val iconSize = L.FOOD_ICON_SIZE
+//        val scale = 0.6f
+//
+//        withPose(ctx, centerX.toFloat(), y.toFloat(), scale, scale) {
+//            val foodText = "${player.foodLevel}"
+//            val foodTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/food_full")
+//            val rowWidth = iconSize + L.ICON_TEXT_GAP + font.width(foodText)
+//            val leftX = -(rowWidth / 2)
+//
+//            runCatching {
+//                ctx.blitSprite(RenderPipelines.GUI_TEXTURED, foodTexture, leftX, 0, iconSize, iconSize)
+//            }
+//            ctx.drawString(font, foodText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_TEXT, true)
+//        }
+//    }
 
     // ──────────────────────────────────────────────────────────────
     //  主副手图标（竖向排列）
@@ -459,24 +490,25 @@ object PlayerCardRenderer {
     //  效果徽章
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderEffectBadges(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, availableWidth: Int, opacity: Int) {
+    private fun renderEffectBadgesVertical(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         if (player.effects.isEmpty()) return
         val font = Minecraft.getInstance().font
-        val badgeStep = L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP + 2  // 每个徽章占用的宽度（含外框）
-        val maxBadges = (availableWidth / badgeStep).coerceAtLeast(1)
+        val badgeStep = L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP + 2  // 每个徽章占用的高度（含外框）
+        val availableHeight = (L.CARD_HEIGHT - L.EFFECTS_START_Y - 2).coerceAtLeast(badgeStep)
+        val maxBadges = (availableHeight / badgeStep).coerceAtLeast(1)
 
         for ((index, effect) in player.effects.take(maxBadges).withIndex()) {
-            val bx = x + index * badgeStep
+            val by = y + index * badgeStep
 
             // 绘制外框背景（深色半透明）
             val frameBg = ((opacity * 3 / 4) shl 24) or 0x222222
-            ctx.fill(bx - 1, y - 1, bx + L.EFFECT_BADGE_SIZE + 1, y + L.EFFECT_BADGE_SIZE + 1, frameBg)
+            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 1, by + L.EFFECT_BADGE_SIZE + 1, frameBg)
 
             // 获取效果图标的 Identifier
             val iconId = getEffectIcon(effect.identifier)
 
             // 使用 blitSprite 渲染效果图标
-            withPose(ctx, bx.toFloat(), y.toFloat(), L.EFFECT_BADGE_SIZE / 18f, L.EFFECT_BADGE_SIZE / 18f) {
+            withPose(ctx, x.toFloat(), by.toFloat(), L.EFFECT_BADGE_SIZE / 18f, L.EFFECT_BADGE_SIZE / 18f) {
                 ctx.blitSprite(RenderPipelines.GUI_TEXTURED, iconId, 0, 0, 18, 18)
             }
 
@@ -487,8 +519,8 @@ object PlayerCardRenderer {
                 val numScale = 0.35f  // 进一步缩小罗马数字
                 // 计算右上角位置
                 val romanWidth = (font.width(roman) * numScale).toInt()
-                val romanX = bx + L.EFFECT_BADGE_SIZE - romanWidth
-                val romanY = y - 1
+                val romanX = x + L.EFFECT_BADGE_SIZE - romanWidth
+                val romanY = by - 1
                 withPose(ctx, romanX.toFloat(), romanY.toFloat(), numScale, numScale) {
                     ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
                 }
