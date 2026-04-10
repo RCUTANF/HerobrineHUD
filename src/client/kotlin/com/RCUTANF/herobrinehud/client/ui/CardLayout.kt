@@ -15,7 +15,7 @@ object CardLayout {
 
     // ── 卡片整体 ──────────────────────────────────────────────
     const val CARD_WIDTH = 35         // 卡片加宽 5px
-    const val CARD_HEIGHT = 58       // 更紧凑：继续回收盔甲移除后的 2px 高度
+    const val CARD_HEIGHT = 62       // 更紧凑：继续回收盔甲移除后的 2px 高度
     const val CARD_GAP = 1            // 卡片之间的间距
     const val TEAM_GAP = 6            // 队伍之间的间距
     const val MARGIN = 4              // 屏幕边距
@@ -27,11 +27,18 @@ object CardLayout {
 
     // ── 全身像区域 ──────────────────────────────────────────────
     const val FULL_BODY_AREA_WIDTH = 20     // 全身像区域宽度（仅布局区域，不影响全身像实际渲染尺寸）
-    const val FULL_BODY_AREA_HEIGHT = 35    // 全身像区域高度（仅布局区域，不影响全身像实际渲染尺寸）
+    const val FULL_BODY_AREA_HEIGHT = 39    // 增加 5px：为脚底到下边框留出更多空间
     const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度（保持不变）
     const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度（保持不变）
-    const val FULL_BODY_Y_OFFSET = 9        // 全身像区域在卡片内的 Y 偏移
-    const val NAME_ABOVE_BODY_Y_OFFSET = 2  // 名称相对卡片顶部的 Y 偏移
+    const val FULL_BODY_FRAME_Y_OFFSET = 9  // 全身像边框区域在卡片内的 Y 偏移（固定区域位置）
+    const val FULL_BODY_Y_OFFSET = 5       // 玩家全身像实际渲染起点 Y（可单独调，不影响区域边框）
+    const val NAME_ABOVE_BODY_Y_OFFSET = 1  // 名称相对卡片顶部的 Y 偏移
+    const val FULL_BODY_TOP_PADDING = 2     // 固定顶部留白，让新增高度主要沉到底部
+
+    // 脚底地面条（在全身像内部，先绘制再渲染实体，营造“站在地面上”的错觉）
+    const val AVATAR_GROUND_WIDTH = 17
+    const val AVATAR_GROUND_HEIGHT = 7
+    const val AVATAR_GROUND_Y_FROM_BOTTOM = -14
 
     const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
     const val HAND_X_OFFSET = 25      // 主副手起始 X（卡片加宽后保持右侧边距）
@@ -48,7 +55,7 @@ object CardLayout {
     const val HOTKEY_Y_OFFSET = 38    // 快捷键编号在卡片内的 Y 偏移
 
     // ── 血量/饱食度区域（放在全身像下方）────────────────────────
-    const val HEALTH_Y_OFFSET = 49    // 血量行起始 Y 偏移（全身像下方）
+    const val HEALTH_Y_OFFSET = 53    // 血量行起始 Y 偏移（全身像下方）
     const val FOOD_Y_OFFSET = 52      // 饱食度行起始 Y 偏移（血量下方）
     const val HEART_ICON_SIZE = 7     // 心形图标大小
     const val FOOD_ICON_SIZE = 7      // 饱食度图标大小
@@ -82,7 +89,7 @@ object CardLayout {
      *  - 末地   → 末地岩纹理 (end_stone)
      */
     enum class DimensionIcon(val dimensionId: String, val textureId: String, val blockItemId: String) {
-        OVERWORLD("minecraft:overworld",  "minecraft:textures/block/dirt.png", "minecraft:grass_block"),
+        OVERWORLD("minecraft:overworld",  "minecraft:textures/block/grass_block_side.png", "minecraft:grass_block"),
         NETHER   ("minecraft:the_nether", "minecraft:textures/block/netherrack.png", "minecraft:netherrack"),
         THE_END  ("minecraft:the_end",    "minecraft:textures/block/end_stone.png", "minecraft:end_stone");
 

@@ -52,6 +52,9 @@ object PlayerCardRenderer {
     private const val COLOR_BADGE_BG = 0x141B25
     private const val COLOR_BADGE_BORDER = 0x7E90A8
     private const val COLOR_BADGE_TEXT_BG = 0x0A0F16
+    private const val COLOR_GROUND_FALLBACK = 0x3A4658
+
+    private val defaultGroundTexture = Identifier.parse(CardLayout.DimensionIcon.OVERWORLD.textureId)
 
     /**
      * 渲染完整的玩家卡片（竖向布局）
@@ -82,9 +85,9 @@ object PlayerCardRenderer {
         // 4. 效果徽章（全身像右方，主副手下方竖向排列）
 
         val bodyAreaX = cardX + L.AVATAR_X_OFFSET
-        val bodyAreaY = cardY + L.FULL_BODY_Y_OFFSET
+        val bodyAreaY = cardY + L.FULL_BODY_FRAME_Y_OFFSET
         val bodyX = bodyAreaX + (L.FULL_BODY_AREA_WIDTH - L.FULL_BODY_WIDTH) / 2
-        val bodyY = bodyAreaY + (L.FULL_BODY_AREA_HEIGHT - L.FULL_BODY_HEIGHT) / 2
+        val bodyY = cardY + L.FULL_BODY_Y_OFFSET
         val handX = cardX + L.HAND_X_OFFSET
         val handY = cardY + L.HAND_Y_OFFSET
 
@@ -100,7 +103,15 @@ object PlayerCardRenderer {
                 frameNameY,
                 opacity
             )
-            renderAvatar(ctx, player, bodyX, bodyY, opacity)
+            renderAvatar(
+                ctx,
+                player,
+                bodyX,
+                bodyY,
+                bodyAreaY,
+                bodyAreaY + L.FULL_BODY_AREA_HEIGHT,
+                opacity
+            )
         }
 
         // 保留主副手图标渲染（与现有布局兼容）
@@ -245,18 +256,93 @@ object PlayerCardRenderer {
     //  全身像
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderAvatar(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
-        if (renderAvatar3D(ctx, player, x, y)) {
+    private fun renderAvatar(
+        ctx: GuiGraphics,
+        player: PlayerInfo,
+        x: Int,
+        y: Int,
+        frameTop: Int,
+        frameBottom: Int,
+        opacity: Int
+    ) {
+        renderAvatarGround(ctx, player, x, y, frameTop, frameBottom, opacity)
+
+        if (renderAvatar3D(ctx, player, x, y, frameBottom)) {
             return
         }
 
         renderAvatarFallback2D(ctx, player, x, y, opacity)
     }
 
+    private fun renderAvatarGround(
+        ctx: GuiGraphics,
+        player: PlayerInfo,
+        x: Int,
+        y: Int,
+        frameTop: Int,
+        frameBottom: Int,
+        opacity: Int
+    ) {
+        val groundWidth = L.AVATAR_GROUND_WIDTH
+        val groundHeight = L.AVATAR_GROUND_HEIGHT
+        val groundX = x + (L.FULL_BODY_WIDTH - groundWidth) / 2
+        val groundY = y + L.FULL_BODY_HEIGHT - L.AVATAR_GROUND_Y_FROM_BOTTOM - groundHeight
+
+        val groundTexture = player.dimension
+            ?.let(CardLayout.DimensionIcon::fromDimensionId)
+            ?.let { runCatching { Identifier.parse(it.textureId) }.getOrNull() }
+            ?: defaultGroundTexture
+
+        val shadowColor = (((opacity * 0.24f).toInt().coerceIn(0, 255)) shl 24)
+        val topEdgeColor = (((opacity * 0.45f).toInt().coerceIn(0, 255)) shl 24) or 0xC8D2DD
+        val bottomEdgeColor = (((opacity * 0.35f).toInt().coerceIn(0, 255)) shl 24) or 0x11161F
+
+        val groundTop = groundY.coerceAtLeast(frameTop)
+        val groundBottom = (groundY + groundHeight).coerceAtMost(frameBottom)
+        if (groundTop >= groundBottom) return
+
+        val visibleHeight = groundBottom - groundTop
+        val vOffset = (groundTop - groundY).toFloat()
+
+        val shadowTop = (groundY + groundHeight - 1).coerceAtLeast(frameTop)
+        val shadowBottom = (groundY + groundHeight + 2).coerceAtMost(frameBottom)
+        if (shadowTop < shadowBottom) {
+            // Clip the contact shadow to the full-body frame, not the avatar body box.
+            ctx.fill(groundX - 1, shadowTop, groundX + groundWidth + 1, shadowBottom, shadowColor)
+        }
+
+        val drewTexture = runCatching {
+            ctx.blit(
+                RenderPipelines.GUI_TEXTURED,
+                groundTexture,
+                groundX,
+                groundTop,
+                0f,
+                vOffset,
+                groundWidth,
+                visibleHeight,
+                16,
+                16
+            )
+        }.isSuccess
+
+        if (!drewTexture) {
+            val fallbackColor = (((opacity * 0.70f).toInt().coerceIn(0, 255)) shl 24) or COLOR_GROUND_FALLBACK
+            ctx.fill(groundX, groundTop, groundX + groundWidth, groundBottom, fallbackColor)
+        }
+
+        if (groundTop <= groundY) {
+            ctx.fill(groundX, groundTop, groundX + groundWidth, (groundTop + 1).coerceAtMost(groundBottom), topEdgeColor)
+        }
+        if (groundBottom >= groundY + groundHeight) {
+            ctx.fill(groundX, (groundBottom - 1).coerceAtLeast(groundTop), groundX + groundWidth, groundBottom, bottomEdgeColor)
+        }
+    }
+
     /**
      * 使用简化版实体渲染：固定正面朝向，不跟随鼠标。
      */
-    private fun renderAvatar3D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int): Boolean {
+    private fun renderAvatar3D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, frameBottom: Int): Boolean {
         val preview = getOrCreatePreviewPlayer(player) ?: return false
 
         return runCatching {
@@ -280,9 +366,9 @@ object PlayerCardRenderer {
 
             val translation = Vector3f(0.0F, state.boundingBoxHeight / 2.0F + 0.01F, 0.0F)
             val scale = (L.FULL_BODY_HEIGHT * 0.6f).coerceAtLeast(1f)
-            // Add a little vertical clip padding to avoid trimming the head layer.
             val clipTop = y - 3
-            val clipBottom = y + L.FULL_BODY_HEIGHT + 1
+            // Bottom clip follows the full-body frame bottom rather than the avatar's feet box.
+            val clipBottom = frameBottom
             ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, clipBottom)
         }.isSuccess
     }
