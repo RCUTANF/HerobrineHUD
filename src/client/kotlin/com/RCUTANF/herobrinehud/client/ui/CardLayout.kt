@@ -31,14 +31,14 @@ object CardLayout {
     const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度（保持不变）
     const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度（保持不变）
     const val FULL_BODY_FRAME_Y_OFFSET = 9  // 全身像边框区域在卡片内的 Y 偏移（固定区域位置）
-    const val FULL_BODY_Y_OFFSET = 5       // 玩家全身像实际渲染起点 Y（可单独调，不影响区域边框）
+    const val FULL_BODY_Y_OFFSET = 7       // 玩家全身像实际渲染起点 Y（可单独调，不影响区域边框）
     const val NAME_ABOVE_BODY_Y_OFFSET = 1  // 名称相对卡片顶部的 Y 偏移
     const val FULL_BODY_TOP_PADDING = 2     // 固定顶部留白，让新增高度主要沉到底部
 
     // 脚底地面条（在全身像内部，先绘制再渲染实体，营造“站在地面上”的错觉）
     const val AVATAR_GROUND_WIDTH = 17
     const val AVATAR_GROUND_HEIGHT = 7
-    const val AVATAR_GROUND_Y_FROM_BOTTOM = -14
+    const val AVATAR_GROUND_Y_FROM_BOTTOM = -13
 
     const val HAND_SLOT_SIZE = 8      // 主副手槽位大小（头像高度的一半）
     const val HAND_X_OFFSET = 25      // 主副手起始 X（卡片加宽后保持右侧边距）

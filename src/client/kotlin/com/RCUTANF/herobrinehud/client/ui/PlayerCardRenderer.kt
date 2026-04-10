@@ -3,6 +3,7 @@ package com.RCUTANF.herobrinehud.client.ui
 import com.RCUTANF.herobrinehud.client.animation.PlayerAnimationManager
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.client.ClientTeamData
+import com.RCUTANF.herobrinehud.client.ConfigData
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
@@ -35,6 +36,33 @@ import java.util.UUID
  *  - 最下：效果徽章
  */
 object PlayerCardRenderer {
+
+    // Runtime snapshot of resolved positions; CardLayout remains the single source of constants.
+    private data class RenderLayoutSnapshot(
+        val cardX: Int,
+        val cardY: Int,
+        val bodyAreaX: Int,
+        val bodyAreaY: Int,
+        val bodyX: Int,
+        val bodyY: Int,
+        val handX: Int,
+        val handY: Int,
+        val frameNameY: Int,
+        val nameX: Int,
+        val nameY: Int,
+        val nameWidth: Int,
+        val statsCenterX: Int,
+        val healthY: Int,
+        val effectsX: Int,
+        val effectsY: Int,
+        val frameTop: Int,
+        val frameBottom: Int,
+        val showAvatar: Boolean,
+        val showEquipment: Boolean,
+        val showHealthNumber: Boolean,
+        val showDimension: Boolean,
+        val showEffects: Boolean
+    )
 
     private val L = CardLayout
     private val previewPlayers = mutableMapOf<UUID, RemotePlayer>()
@@ -71,91 +99,111 @@ object PlayerCardRenderer {
     fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int? = null) {
         val config = HudConfig.data
 
-        // 卡片背景：使用维度对应方块的纹理
-        renderCardBackground(ctx, cardX, cardY, opacity)
+        val layout = buildLayout(cardX, cardY, config)
 
+        // Stage 1: base panel and highlights.
+        renderCardBackground(ctx, layout, opacity)
         if (ClientTeamData.isSpectating(player.uuid)) {
-            renderCardSpectateHighlight(ctx, cardX, cardY, opacity)
+            renderCardSpectateHighlight(ctx, layout, opacity)
         }
 
-        // 竖向布局：
-        // 1. 顶部：全身像
-        // 2. 名称（全身像上方，占据整个卡片宽度，居中）
-        // 3. 血量与饱食度（全身像下方）
-        // 4. 效果徽章（全身像右方，主副手下方竖向排列）
+        // Stage 2: avatar + equipment blocks.
+        renderAvatarSection(ctx, player, layout, opacity)
+        renderEquipmentSection(ctx, player, layout, opacity)
 
+        // Stage 3: text, stats, and effects.
+        renderName(ctx, player, teamColor, layout.nameX, layout.nameY, layout.nameWidth, opacity)
+        if (layout.showHealthNumber) {
+            renderHealthValue(ctx, player, layout.statsCenterX, layout.healthY, opacity, layout.showDimension)
+        }
+        if (layout.showEffects && player.effects.isNotEmpty()) {
+            renderEffectBadgesVertical(ctx, player, layout.effectsX, layout.effectsY, opacity)
+        }
+
+        if (hotkeyNumber != null) {
+            renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, layout, opacity)
+        }
+
+        // 7. 渲染玩家变化动画（在所有内容之上）
+        // Stage 4: transient overlays (hotkey + animations).
+        renderPlayerAnimations(ctx, player, layout, opacity)
+    }
+
+    private fun buildLayout(cardX: Int, cardY: Int, config: ConfigData): RenderLayoutSnapshot {
         val bodyAreaX = cardX + L.AVATAR_X_OFFSET
         val bodyAreaY = cardY + L.FULL_BODY_FRAME_Y_OFFSET
         val bodyX = bodyAreaX + (L.FULL_BODY_AREA_WIDTH - L.FULL_BODY_WIDTH) / 2
         val bodyY = cardY + L.FULL_BODY_Y_OFFSET
         val handX = cardX + L.HAND_X_OFFSET
         val handY = cardY + L.HAND_Y_OFFSET
-
-        // 1. 顶部：全身像 + 名称共用一个层次化背景框
         val frameNameY = cardY + L.NAME_ABOVE_BODY_Y_OFFSET
-        if (config.showAvatar) {
-            renderAvatarNameFrame(
-                ctx,
-                bodyAreaX,
-                L.FULL_BODY_AREA_WIDTH,
-                bodyAreaY,
-                L.FULL_BODY_AREA_HEIGHT,
-                frameNameY,
-                opacity
-            )
-            renderAvatar(
-                ctx,
-                player,
-                bodyX,
-                bodyY,
-                bodyAreaY,
-                bodyAreaY + L.FULL_BODY_AREA_HEIGHT,
-                opacity
-            )
-        }
 
-        // 保留主副手图标渲染（与现有布局兼容）
-        if (config.showEquipment) {
-            renderHandIcons(ctx, player, handX, handY, opacity)
-        }
-
-        // 2. 名称（全身像上方，占据整个卡片宽度，居中）
         val nameX = if (config.showAvatar) bodyAreaX else cardX
         val nameWidth = if (config.showAvatar) L.FULL_BODY_AREA_WIDTH else L.CARD_WIDTH
         val nameY = if (config.showAvatar) frameNameY + 2 else frameNameY
-        renderName(ctx, player, teamColor, nameX, nameY, nameWidth, opacity)
 
-        // 4. 血量（全身像下方，独占原统计区域）
-        if (config.showHealthNumber) {
-            val statsCenterX = cardX + L.STATS_CENTER_X_OFFSET
-            val healthY = cardY + L.HEALTH_Y_OFFSET
-            renderHealthValue(ctx, player, statsCenterX, healthY, opacity, config.showDimension)
-        }
+        return RenderLayoutSnapshot(
+            cardX = cardX,
+            cardY = cardY,
+            bodyAreaX = bodyAreaX,
+            bodyAreaY = bodyAreaY,
+            bodyX = bodyX,
+            bodyY = bodyY,
+            handX = handX,
+            handY = handY,
+            frameNameY = frameNameY,
+            nameX = nameX,
+            nameY = nameY,
+            nameWidth = nameWidth,
+            statsCenterX = cardX + L.STATS_CENTER_X_OFFSET,
+            healthY = cardY + L.HEALTH_Y_OFFSET,
+            effectsX = cardX + L.EFFECTS_X,
+            effectsY = cardY + L.EFFECTS_START_Y,
+            frameTop = bodyAreaY,
+            frameBottom = bodyAreaY + L.FULL_BODY_AREA_HEIGHT,
+            showAvatar = config.showAvatar,
+            showEquipment = config.showEquipment,
+            showHealthNumber = config.showHealthNumber,
+            showDimension = config.showDimension,
+            showEffects = config.showEffects
+        )
+    }
 
-        // 护甲槽位已移除，为全身像留出更大空间
+    private fun renderAvatarSection(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+        if (!layout.showAvatar) return
 
-        // 5. 效果徽章（全身像右方，主副手下方竖向排列）
-        if (config.showEffects && player.effects.isNotEmpty()) {
-            val effectsX = cardX + L.EFFECTS_X
-            val effectsY = cardY + L.EFFECTS_START_Y
-            renderEffectBadgesVertical(ctx, player, effectsX, effectsY, opacity)
-        }
+        renderAvatarNameFrame(
+            ctx,
+            layout.bodyAreaX,
+            L.FULL_BODY_AREA_WIDTH,
+            layout.bodyAreaY,
+            L.FULL_BODY_AREA_HEIGHT,
+            layout.frameNameY,
+            opacity
+        )
+        renderAvatar(
+            ctx,
+            player,
+            layout.bodyX,
+            layout.bodyY,
+            layout.frameTop,
+            layout.frameBottom,
+            opacity
+        )
+    }
 
-        if (hotkeyNumber != null) {
-            renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, cardX, cardY, opacity)
-        }
-
-        // 7. 渲染玩家变化动画（在所有内容之上）
-        renderPlayerAnimations(ctx, player, cardX, cardY, opacity)
+    private fun renderEquipmentSection(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+        if (!layout.showEquipment) return
+        renderHandIcons(ctx, player, layout.handX, layout.handY, opacity)
     }
     
     /**
      * 渲染玩家的所有活跃动画
      */
-    private fun renderPlayerAnimations(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, opacity: Int) {
+    private fun renderPlayerAnimations(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         val animations = PlayerAnimationManager.getAnimations(player.uuid)
         animations.forEach { animation ->
-            animation.render(ctx, cardX, cardY, opacity)
+            animation.render(ctx, layout.cardX, layout.cardY, opacity)
         }
     }
 
@@ -171,7 +219,9 @@ object PlayerCardRenderer {
      * @param cardY  卡片左上角 Y
      * @param opacity 不透明度 (0-255)
      */
-    private fun renderCardBackground(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+    private fun renderCardBackground(ctx: GuiGraphics, layout: RenderLayoutSnapshot, opacity: Int) {
+        val cardX = layout.cardX
+        val cardY = layout.cardY
         val alpha = (opacity * 0.92f).toInt().coerceIn(0, 255) // rgba(23, 28, 36, 0.92)
         val bgColor = (alpha shl 24) or COLOR_PANEL_BG
 
@@ -602,7 +652,7 @@ object PlayerCardRenderer {
      * @param cardY        卡片左上角 Y
      * @param opacity      不透明度 (0-255)
      */
-    private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphics, hotkeyNumber: Int, cardX: Int, cardY: Int, opacity: Int) {
+    private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphics, hotkeyNumber: Int, layout: RenderLayoutSnapshot, opacity: Int) {
         val font = Minecraft.getInstance().font
         val hotkeyText = "[$hotkeyNumber]"
         val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
@@ -611,8 +661,8 @@ object PlayerCardRenderer {
         val textWidth = font.width(hotkeyText)
         val scaledTextWidth = (textWidth * scale).toInt()
         val scaledTextHeight = (8 * scale).toInt()
-        val x = cardX + L.CARD_WIDTH - scaledTextWidth - L.HOTKEY_MARGIN_RIGHT
-        val y = cardY + L.CARD_HEIGHT - scaledTextHeight - L.HOTKEY_MARGIN_BOTTOM
+        val x = layout.cardX + L.CARD_WIDTH - scaledTextWidth - L.HOTKEY_MARGIN_RIGHT
+        val y = layout.cardY + L.CARD_HEIGHT - scaledTextHeight - L.HOTKEY_MARGIN_BOTTOM
 
         withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
             ctx.drawString(font, hotkeyText, 0, 0, hotkeyColor, true)
@@ -838,7 +888,9 @@ object PlayerCardRenderer {
     /**
      * 在头像周围渲染黄色高亮框
      */
-    private fun renderCardSpectateHighlight(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+    private fun renderCardSpectateHighlight(ctx: GuiGraphics, layout: RenderLayoutSnapshot, opacity: Int) {
+        val cardX = layout.cardX
+        val cardY = layout.cardY
         val alpha = (opacity * 0.9f).toInt().coerceIn(0, 255)
         val highlightColor = (alpha shl 24) or 0xFFFFFF
         val borderWidth = 1
