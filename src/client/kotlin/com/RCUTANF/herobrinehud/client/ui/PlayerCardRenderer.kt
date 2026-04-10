@@ -369,8 +369,28 @@ object PlayerCardRenderer {
             val clipTop = y - 3
             // Bottom clip follows the full-body frame bottom rather than the avatar's feet box.
             val clipBottom = frameBottom
+            suppressEntityNameTag(state)
             ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, clipBottom)
         }.isSuccess
+    }
+
+    private fun suppressEntityNameTag(state: EntityRenderState) {
+        val booleanFields = setOf("showNameTag", "shouldShowName", "nameTagVisible", "renderNameTag", "displayNameVisible")
+        val textFields = setOf("nameTag", "displayName", "name", "customName", "nameTagText")
+
+        var type: Class<*>? = state.javaClass
+        while (type != null && type != Any::class.java) {
+            type.declaredFields.forEach { field ->
+                runCatching {
+                    field.isAccessible = true
+                    when {
+                        field.type == java.lang.Boolean.TYPE && field.name in booleanFields -> field.setBoolean(state, false)
+                        !field.type.isPrimitive && field.name in textFields -> field.set(state, null)
+                    }
+                }
+            }
+            type = type.superclass
+        }
     }
 
     private fun getOrCreatePreviewPlayer(player: PlayerInfo): RemotePlayer? {
@@ -628,13 +648,13 @@ object PlayerCardRenderer {
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
             ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_HP, true)
 
-            if (dimensionItem != null) {
-                val dimX = leftX + healthWidth + L.DIMENSION_GAP_FROM_HEALTH
-                val dimY = (iconSize - dimensionSize) / 2
-                withPose(ctx, dimX.toFloat(), dimY.toFloat(), dimensionSize / 16f, dimensionSize / 16f) {
-                    ctx.renderItem(dimensionItem, 0, 0)
-                }
-            }
+//            if (dimensionItem != null) {
+//                val dimX = leftX + healthWidth + L.DIMENSION_GAP_FROM_HEALTH
+//                val dimY = (iconSize - dimensionSize) / 2
+//                withPose(ctx, dimX.toFloat(), dimY.toFloat(), dimensionSize / 16f, dimensionSize / 16f) {
+//                    ctx.renderItem(dimensionItem, 0, 0)
+//                }
+//            }
         }
     }
 
