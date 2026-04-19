@@ -381,7 +381,7 @@ object TeamManager {
         return PlayerInfo(
             uuid = player.uuid.toString(),
             name = player.gameProfile.name,
-            displayName = player.displayName?.string ?: player.gameProfile.name,
+            displayName = player.displayName.string ?: player.gameProfile.name,
             avatar = AvatarResolver.resolve(player.gameProfile),
             gamemode = player.gameMode.gameModeForPlayer.getName(),
             health = player.health.toDouble(),

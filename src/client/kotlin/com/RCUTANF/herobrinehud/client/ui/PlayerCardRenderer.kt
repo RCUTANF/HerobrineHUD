@@ -81,6 +81,11 @@ object PlayerCardRenderer {
     private const val COLOR_BADGE_BORDER = 0x7E90A8
     private const val COLOR_BADGE_TEXT_BG = 0x0A0F16
     private const val COLOR_GROUND_FALLBACK = 0x3A4658
+    private const val COLOR_HOTKEY_BADGE_BG = 0xF7C928
+    private const val COLOR_HOTKEY_BADGE_HIGHLIGHT = 0xFFE88C
+    private const val COLOR_HOTKEY_BADGE_BORDER = 0xA87800
+    private const val COLOR_HOTKEY_BADGE_FOLD = 0xD79A00
+    private const val COLOR_HOTKEY_TEXT = 0x202020
 
     private val defaultGroundTexture = Identifier.parse(CardLayout.DimensionIcon.OVERWORLD.textureId)
 
@@ -654,18 +659,46 @@ object PlayerCardRenderer {
      */
     private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphics, hotkeyNumber: Int, layout: RenderLayoutSnapshot, opacity: Int) {
         val font = Minecraft.getInstance().font
-        val hotkeyText = "[$hotkeyNumber]"
-        val hotkeyColor = (opacity shl 24) or 0xFFFF55  // 黄色
-        val scale = 0.45f
+        val hotkeyText = hotkeyNumber.toString()
+        val badgeScale = 0.5f
 
         val textWidth = font.width(hotkeyText)
-        val scaledTextWidth = (textWidth * scale).toInt()
-        val scaledTextHeight = (8 * scale).toInt()
-        val x = layout.cardX + L.CARD_WIDTH - scaledTextWidth - L.HOTKEY_MARGIN_RIGHT
-        val y = layout.cardY + L.CARD_HEIGHT - scaledTextHeight - L.HOTKEY_MARGIN_BOTTOM
+        val rawBadgeWidth = (textWidth + 8).coerceAtLeast(12)
+        val rawBadgeHeight = 12
+        val badgeWidth = (rawBadgeWidth * badgeScale).toInt().coerceAtLeast(1)
+        val badgeHeight = (rawBadgeHeight * badgeScale).toInt().coerceAtLeast(1)
+        val x = layout.cardX + L.CARD_WIDTH - badgeWidth - L.HOTKEY_MARGIN_RIGHT
+        val y = layout.cardY + L.CARD_HEIGHT - badgeHeight - L.HOTKEY_MARGIN_BOTTOM
 
-        withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
-            ctx.drawString(font, hotkeyText, 0, 0, hotkeyColor, true)
+        val shadowColor = (((opacity * 0.35f).toInt().coerceIn(0, 255)) shl 24)
+        val badgeColor = (((opacity * 0.96f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HOTKEY_BADGE_BG
+        val highlightColor = (((opacity * 0.98f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HOTKEY_BADGE_HIGHLIGHT
+        val borderColor = (((opacity * 0.98f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HOTKEY_BADGE_BORDER
+        val foldColor = (((opacity * 0.98f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HOTKEY_BADGE_FOLD
+        val textColor = (((opacity * 0.98f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HOTKEY_TEXT
+
+        withPose(ctx, x.toFloat(), y.toFloat(), badgeScale, badgeScale) {
+            // soft drop-shadow to lift the badge off the card background
+            ctx.fill(1, 1, rawBadgeWidth + 1, rawBadgeHeight + 1, shadowColor)
+            ctx.fill(0, 0, rawBadgeWidth, rawBadgeHeight, badgeColor)
+
+            // top-left highlight + bottom-right border for a modern raised look
+            ctx.fill(0, 0, rawBadgeWidth, 1, highlightColor)
+            ctx.fill(0, 0, 1, rawBadgeHeight, highlightColor)
+            ctx.fill(0, rawBadgeHeight - 1, rawBadgeWidth, rawBadgeHeight, borderColor)
+            ctx.fill(rawBadgeWidth - 1, 0, rawBadgeWidth, rawBadgeHeight, borderColor)
+
+            // folded bottom-right corner (pixel-triangle rows)
+            val foldSize = 4.coerceAtMost(rawBadgeWidth / 2).coerceAtMost(rawBadgeHeight / 2)
+            for (row in 0 until foldSize) {
+                val rowY = rawBadgeHeight - foldSize + row
+                val rowX = rawBadgeWidth - foldSize + row
+                ctx.fill(rowX, rowY, rawBadgeWidth, rowY + 1, foldColor)
+            }
+
+            val textX = (rawBadgeWidth - textWidth) / 2
+            val textY = (rawBadgeHeight - font.lineHeight) / 2
+            ctx.drawString(font, hotkeyText, textX, textY, textColor, false)
         }
     }
 
