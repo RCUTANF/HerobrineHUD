@@ -101,6 +101,7 @@ object PlayerCardRenderer {
     private const val HEALTH_VALUE_ROW_Y_OFFSET = 4
 
     private val defaultGroundTexture = Identifier.parse(CardLayout.DimensionIcon.OVERWORLD.textureId)
+    private val vanillaEffectBadgeBackground = Identifier.withDefaultNamespace("hud/effect_background")
 
     /**
      * 渲染完整的玩家卡片（竖向布局）
@@ -827,15 +828,11 @@ object PlayerCardRenderer {
 
         for ((index, effect) in player.effects.take(maxBadges).withIndex()) {
             val by = y + index * badgeStep
+            val badgeLeft = x - 1
+            val badgeTop = by - 1
+            val badgeSize = L.EFFECT_BADGE_SIZE + 2
 
-            // 三层徽章背景：投影 -> 主底板 -> 边框，让图标在复杂场景下更突出
-            val shadowColor = ((opacity * 0.36f).toInt().coerceIn(0, 255) shl 24)
-            val panelColor = ((opacity * 0.92f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BG
-            val borderColor = ((opacity * 0.95f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BORDER
-
-            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 2, by + L.EFFECT_BADGE_SIZE + 2, shadowColor)
-            ctx.fill(x - 1, by - 1, x + L.EFFECT_BADGE_SIZE + 1, by + L.EFFECT_BADGE_SIZE + 1, panelColor)
-            drawThinBorderWithColor(ctx, x - 1, by - 1, L.EFFECT_BADGE_SIZE + 2, borderColor)
+            renderVanillaEffectBadgeBackground(ctx, badgeLeft, badgeTop, badgeSize, opacity)
 
             // 获取效果图标的 Identifier
             val iconId = getEffectIcon(effect.identifier)
@@ -853,8 +850,6 @@ object PlayerCardRenderer {
                 val scaledTextWidth = ceil(font.width(roman) * numScale).toInt().coerceAtLeast(1)
                 val scaledTextHeight = ceil(font.lineHeight * numScale).toInt().coerceAtLeast(1)
                 // Align to the badge outer frame so the numeral appears truly top-right.
-                val badgeLeft = x - 1
-                val badgeTop = by - 1
                 val badgeRight = x + L.EFFECT_BADGE_SIZE + 1
                 val badgeBottom = by + L.EFFECT_BADGE_SIZE + 1
                 val inset = 0
@@ -873,6 +868,29 @@ object PlayerCardRenderer {
                     ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
                 }
             }
+        }
+    }
+
+    private fun renderVanillaEffectBadgeBackground(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
+        val drewVanilla = runCatching {
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, vanillaEffectBadgeBackground, x, y, size, size)
+        }.isSuccess
+
+        if (!drewVanilla) {
+            val shadowColor = ((opacity * 0.36f).toInt().coerceIn(0, 255) shl 24)
+            val panelColor = ((opacity * 0.92f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BG
+            val borderColor = ((opacity * 0.95f).toInt().coerceIn(0, 255) shl 24) or COLOR_BADGE_BORDER
+
+            ctx.fill(x, y, x + size + 1, y + size + 1, shadowColor)
+            ctx.fill(x, y, x + size, y + size, panelColor)
+            drawThinBorderWithColor(ctx, x, y, size, borderColor)
+            return
+        }
+
+        // Sprite backgrounds are opaque; darken it as opacity decreases to keep fade behavior close to the rest of the card.
+        val fadeMaskAlpha = ((255 - opacity) * 0.75f).toInt().coerceIn(0, 255)
+        if (fadeMaskAlpha > 0) {
+            ctx.fill(x, y, x + size, y + size, (fadeMaskAlpha shl 24))
         }
     }
 
