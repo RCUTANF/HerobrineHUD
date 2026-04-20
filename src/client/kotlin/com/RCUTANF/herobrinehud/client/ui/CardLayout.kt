@@ -27,11 +27,11 @@ object CardLayout {
 
     // ── 全身像区域 ──────────────────────────────────────────────
     const val FULL_BODY_AREA_WIDTH = 20     // 全身像区域宽度（仅布局区域，不影响全身像实际渲染尺寸）
-    const val FULL_BODY_AREA_HEIGHT = 39    // 增加 5px：为脚底到下边框留出更多空间
+    const val FULL_BODY_AREA_HEIGHT = 41    // 增加 5px：为脚底到下边框留出更多空间
     const val FULL_BODY_WIDTH = 15          // 全身像渲染宽度（保持不变）
     const val FULL_BODY_HEIGHT = 30         // 全身像渲染高度（保持不变）
     const val FULL_BODY_FRAME_Y_OFFSET = 9  // 全身像边框区域在卡片内的 Y 偏移（固定区域位置）
-    const val FULL_BODY_Y_OFFSET = 7       // 玩家全身像实际渲染起点 Y（可单独调，不影响区域边框）
+    const val FULL_BODY_Y_OFFSET = 9       // 玩家全身像实际渲染起点 Y（可单独调，不影响区域边框）
     const val NAME_ABOVE_BODY_Y_OFFSET = 1  // 名称相对卡片顶部的 Y 偏移
     const val FULL_BODY_TOP_PADDING = 2     // 固定顶部留白，让新增高度主要沉到底部
 

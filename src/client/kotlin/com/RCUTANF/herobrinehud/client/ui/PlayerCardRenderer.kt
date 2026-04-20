@@ -43,6 +43,7 @@ object PlayerCardRenderer {
         val cardY: Int,
         val bodyAreaX: Int,
         val bodyAreaY: Int,
+        val bodyAreaHeight: Int,
         val bodyX: Int,
         val bodyY: Int,
         val handX: Int,
@@ -53,6 +54,11 @@ object PlayerCardRenderer {
         val nameWidth: Int,
         val statsCenterX: Int,
         val healthY: Int,
+        val healthRowLeftX: Int,
+        val healthRowRightX: Int,
+        val healthBarX: Int,
+        val healthBarY: Int,
+        val healthBarWidth: Int,
         val effectsX: Int,
         val effectsY: Int,
         val frameTop: Int,
@@ -86,6 +92,13 @@ object PlayerCardRenderer {
     private const val COLOR_HOTKEY_BADGE_BORDER = 0xA87800
     private const val COLOR_HOTKEY_BADGE_FOLD = 0xD79A00
     private const val COLOR_HOTKEY_TEXT = 0x202020
+    private const val COLOR_HP_BAR_TRACK = 0x2A0E12
+    private const val COLOR_HP_BAR_FILL = 0xFF4D4D
+    private const val COLOR_HP_BAR_BORDER = 0x8C2A34
+    private const val HEALTH_BAR_X_OFFSET = -1
+    private const val HEALTH_BAR_Y_OFFSET = 0
+    private const val HEALTH_BAR_SIDE_INSET = 2
+    private const val HEALTH_VALUE_ROW_Y_OFFSET = 4
 
     private val defaultGroundTexture = Identifier.parse(CardLayout.DimensionIcon.OVERWORLD.textureId)
 
@@ -117,9 +130,12 @@ object PlayerCardRenderer {
         renderEquipmentSection(ctx, player, layout, opacity)
 
         // Stage 3: text, stats, and effects.
+        if (layout.showHealthNumber) {
+            renderHealthBar(ctx, player, layout, opacity)
+        }
         renderName(ctx, player, teamColor, layout.nameX, layout.nameY, layout.nameWidth, opacity)
         if (layout.showHealthNumber) {
-            renderHealthValue(ctx, player, layout.statsCenterX, layout.healthY, opacity, layout.showDimension)
+            renderHealthValue(ctx, player, layout, opacity)
         }
         if (layout.showEffects && player.effects.isNotEmpty()) {
             renderEffectBadgesVertical(ctx, player, layout.effectsX, layout.effectsY, opacity)
@@ -129,7 +145,6 @@ object PlayerCardRenderer {
             renderHotkeyNumberAtBottomRight(ctx, hotkeyNumber, layout, opacity)
         }
 
-        // 7. 渲染玩家变化动画（在所有内容之上）
         // Stage 4: transient overlays (hotkey + animations).
         renderPlayerAnimations(ctx, player, layout, opacity)
     }
@@ -137,6 +152,9 @@ object PlayerCardRenderer {
     private fun buildLayout(cardX: Int, cardY: Int, config: ConfigData): RenderLayoutSnapshot {
         val bodyAreaX = cardX + L.AVATAR_X_OFFSET
         val bodyAreaY = cardY + L.FULL_BODY_FRAME_Y_OFFSET
+        val bodyAreaHeight = L.FULL_BODY_AREA_HEIGHT
+        val frameBottom = bodyAreaY + bodyAreaHeight
+
         val bodyX = bodyAreaX + (L.FULL_BODY_AREA_WIDTH - L.FULL_BODY_WIDTH) / 2
         val bodyY = cardY + L.FULL_BODY_Y_OFFSET
         val handX = cardX + L.HAND_X_OFFSET
@@ -145,13 +163,23 @@ object PlayerCardRenderer {
 
         val nameX = if (config.showAvatar) bodyAreaX else cardX
         val nameWidth = if (config.showAvatar) L.FULL_BODY_AREA_WIDTH else L.CARD_WIDTH
-        val nameY = if (config.showAvatar) frameNameY + 2 else frameNameY
+        val nameY = if (config.showAvatar) frameNameY + 5 else frameNameY
+        val healthRowLeftX = cardX + 2
+        val healthRowRightX = if (config.showEffects) {
+            cardX + L.EFFECTS_X - 2
+        } else {
+            cardX + L.CARD_WIDTH - 2
+        }
+        val healthBarX = bodyAreaX + HEALTH_BAR_X_OFFSET + HEALTH_BAR_SIDE_INSET
+        val healthBarY = frameNameY + 1 + HEALTH_BAR_Y_OFFSET
+        val healthBarWidth = (L.FULL_BODY_AREA_WIDTH - HEALTH_BAR_SIDE_INSET * 2).coerceAtLeast(6)
 
         return RenderLayoutSnapshot(
             cardX = cardX,
             cardY = cardY,
             bodyAreaX = bodyAreaX,
             bodyAreaY = bodyAreaY,
+            bodyAreaHeight = bodyAreaHeight,
             bodyX = bodyX,
             bodyY = bodyY,
             handX = handX,
@@ -162,10 +190,15 @@ object PlayerCardRenderer {
             nameWidth = nameWidth,
             statsCenterX = cardX + L.STATS_CENTER_X_OFFSET,
             healthY = cardY + L.HEALTH_Y_OFFSET,
+            healthRowLeftX = healthRowLeftX,
+            healthRowRightX = healthRowRightX,
+            healthBarX = healthBarX,
+            healthBarY = healthBarY,
+            healthBarWidth = healthBarWidth,
             effectsX = cardX + L.EFFECTS_X,
             effectsY = cardY + L.EFFECTS_START_Y,
             frameTop = bodyAreaY,
-            frameBottom = bodyAreaY + L.FULL_BODY_AREA_HEIGHT,
+            frameBottom = frameBottom,
             showAvatar = config.showAvatar,
             showEquipment = config.showEquipment,
             showHealthNumber = config.showHealthNumber,
@@ -182,7 +215,7 @@ object PlayerCardRenderer {
             layout.bodyAreaX,
             L.FULL_BODY_AREA_WIDTH,
             layout.bodyAreaY,
-            L.FULL_BODY_AREA_HEIGHT,
+            layout.bodyAreaHeight,
             layout.frameNameY,
             opacity
         )
@@ -706,58 +739,68 @@ object PlayerCardRenderer {
     //  血量行（主副手下方）
     // ──────────────────────────────────────────────────────────────
 
-    // 仅保留血量与饱食度数值，盔甲信息不再渲染
-    private fun renderHealthValue(ctx: GuiGraphics, player: PlayerInfo, centerX: Int, y: Int, opacity: Int, showDimension: Boolean) {
+    // 血量条：简洁纯色深红样式
+    private fun renderHealthBar(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+        val clampedHealth = player.health.coerceAtLeast(0.0)
+        val clampedMaxHealth = player.maxHealth.coerceAtLeast(1.0)
+        val healthRatio = (clampedHealth / clampedMaxHealth).toFloat().coerceIn(0f, 1f)
+
+        val barHeight = 2
+        val barX = layout.healthBarX
+        val barWidth = layout.healthBarWidth.coerceAtLeast(8)
+        val barY = layout.healthBarY
+
+        drawHealthBar(ctx, barX, barY, barWidth, barHeight, healthRatio, opacity)
+    }
+
+    // 底部血量值：心形与数字共用同一垂直偏移。
+    private fun renderHealthValue(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         val font = Minecraft.getInstance().font
-        val iconSize = L.HEART_ICON_SIZE
-        val dimensionSize = L.DIM_BADGE_ICON_SIZE
+        val startX = layout.healthRowLeftX
+        val iconSize = L.HEART_ICON_SIZE.coerceAtLeast(6)
         val scale = 0.6f
-        val healthText = "${player.health.toInt()}"
-        val dimensionItem = if (showDimension) {
-            player.dimension
-                ?.let(CardLayout.DimensionIcon::fromDimensionId)
-                ?.blockItemId
-                ?.let(::resolveItemStack)
-        } else {
-            null
-        }
+        val textColor = (opacity shl 24) or COLOR_HP
 
-        withPose(ctx, centerX.toFloat(), y.toFloat(), scale, scale) {
+        val clampedHealth = player.health.coerceAtLeast(0.0)
+        val healthText = clampedHealth.toInt().toString()
+        val contentGap = L.ICON_TEXT_GAP
+
+        withPose(ctx, startX.toFloat(), layout.healthY.toFloat(), scale, scale) {
             val heartTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/heart/full")
-            val healthWidth = iconSize + L.ICON_TEXT_GAP + font.width(healthText)
-            val rowWidth = healthWidth + if (dimensionItem != null) L.DIMENSION_GAP_FROM_HEALTH + dimensionSize else 0
-            val leftX = -(rowWidth / 2)
+            val leftX = 0
+            val iconY = HEALTH_VALUE_ROW_Y_OFFSET
+            val textX = leftX + iconSize + contentGap
+            val textY = ((iconSize - font.lineHeight) / 2).coerceAtLeast(0) + HEALTH_VALUE_ROW_Y_OFFSET
 
-            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, 0, iconSize, iconSize)
-            ctx.drawString(font, healthText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_HP, true)
-
-//            if (dimensionItem != null) {
-//                val dimX = leftX + healthWidth + L.DIMENSION_GAP_FROM_HEALTH
-//                val dimY = (iconSize - dimensionSize) / 2
-//                withPose(ctx, dimX.toFloat(), dimY.toFloat(), dimensionSize / 16f, dimensionSize / 16f) {
-//                    ctx.renderItem(dimensionItem, 0, 0)
-//                }
-//            }
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, iconY, iconSize, iconSize)
+            ctx.drawString(font, healthText, textX, textY, textColor, true)
         }
     }
 
-//    private fun renderFoodValue(ctx: GuiGraphics, player: PlayerInfo, centerX: Int, y: Int, opacity: Int) {
-//        val font = Minecraft.getInstance().font
-//        val iconSize = L.FOOD_ICON_SIZE
-//        val scale = 0.6f
-//
-//        withPose(ctx, centerX.toFloat(), y.toFloat(), scale, scale) {
-//            val foodText = "${player.foodLevel}"
-//            val foodTexture = Identifier.fromNamespaceAndPath("minecraft", "hud/food_full")
-//            val rowWidth = iconSize + L.ICON_TEXT_GAP + font.width(foodText)
-//            val leftX = -(rowWidth / 2)
-//
-//            runCatching {
-//                ctx.blitSprite(RenderPipelines.GUI_TEXTURED, foodTexture, leftX, 0, iconSize, iconSize)
-//            }
-//            ctx.drawString(font, foodText, leftX + iconSize + L.ICON_TEXT_GAP, 0, (opacity shl 24) or COLOR_TEXT, true)
-//        }
-//    }
+    private fun drawHealthBar(ctx: GuiGraphics, x: Int, y: Int, width: Int, height: Int, ratio: Float, opacity: Int) {
+        if (width <= 0 || height <= 0) return
+
+        val trackColor = (((opacity * 0.50f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HP_BAR_TRACK
+        val fillColor = (((opacity * 0.98f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HP_BAR_FILL
+        val borderColor = (((opacity * 0.92f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HP_BAR_BORDER
+
+        ctx.fill(x, y, x + width, y + height, trackColor)
+
+        val innerX = x
+        val innerY = y
+        val innerW = width.coerceAtLeast(1)
+        val innerH = height.coerceAtLeast(1)
+
+        val rawFillWidth = (innerW * ratio).toInt()
+        val fillWidth = if (ratio > 0f) rawFillWidth.coerceAtLeast(1) else 0
+        if (fillWidth > 0) {
+            val fillRight = (innerX + fillWidth).coerceAtMost(innerX + innerW)
+            ctx.fill(innerX, innerY, fillRight, innerY + innerH, fillColor)
+        }
+
+        // Draw a 0.5-scale thin frame as the final pass so it stays visible over the fill.
+        drawThinRectBorderWithColor(ctx, x, y, width, height, borderColor)
+    }
 
     // ──────────────────────────────────────────────────────────────
     //  主副手图标（竖向排列）
@@ -975,4 +1018,17 @@ object PlayerCardRenderer {
             ctx.fill(scaledSize - 1, 0, scaledSize, scaledSize, borderColor)
         }
     }
+
+    private fun drawThinRectBorderWithColor(ctx: GuiGraphics, x: Int, y: Int, width: Int, height: Int, borderColor: Int) {
+        if (width <= 0 || height <= 0) return
+        withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
+            val scaledW = width * 2
+            val scaledH = height * 2
+            ctx.fill(0, 0, scaledW, 1, borderColor)
+            ctx.fill(0, scaledH - 1, scaledW, scaledH, borderColor)
+            ctx.fill(0, 0, 1, scaledH, borderColor)
+            ctx.fill(scaledW - 1, 0, scaledW, scaledH, borderColor)
+        }
+    }
+
 }
