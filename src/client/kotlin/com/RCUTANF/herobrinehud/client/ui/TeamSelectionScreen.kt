@@ -2,7 +2,7 @@ package com.RCUTANF.herobrinehud.client.ui
 
 import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.client.HudConfig
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
@@ -195,11 +195,11 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
     //  渲染
     // ──────────────────────────────────────────────────────────
 
-    override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick)
+    override fun extractRenderState(guiGraphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, partialTick: Float) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick)
 
         // 标题
-        guiGraphics.drawCenteredString(font, title, width / 2, 1, 0xFFFFFF)
+        guiGraphics.centeredText(font, title, width / 2, 1, 0xFFFFFF)
 
         // 顶部分隔线
         guiGraphics.fill(8, TOP_BAR_H - 2, width - 8, TOP_BAR_H - 1, 0x66FFFFFF)
@@ -216,9 +216,9 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
         val rCount = HudSelectionState.getPlayersBySide(DisplaySide.RIGHT).size
         val nCount = HudSelectionState.getUnassignedPlayers().size
 
-        guiGraphics.drawCenteredString(font, "◀ 左侧 ($lCount)",  col1X + colW / 2, titleY, 0x55AAFF)
-        guiGraphics.drawCenteredString(font, "右侧 ($rCount) ▶", col2X + colW / 2, titleY, 0xFF9955)
-        guiGraphics.drawCenteredString(font, "未上屏 ($nCount)",  col3X + colW / 2, titleY, 0xAAAAAA)
+        guiGraphics.centeredText(font, "◀ 左侧 ($lCount)",  col1X + colW / 2, titleY, 0x55AAFF)
+        guiGraphics.centeredText(font, "右侧 ($rCount) ▶", col2X + colW / 2, titleY, 0xFF9955)
+        guiGraphics.centeredText(font, "未上屏 ($nCount)",  col3X + colW / 2, titleY, 0xAAAAAA)
 
         // 列间分隔线
         val panelTop    = TOP_BAR_H + TITLE_H

@@ -8,7 +8,7 @@ import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher
 import net.minecraft.client.renderer.entity.EntityRenderer
@@ -115,7 +115,7 @@ object PlayerCardRenderer {
      * @param opacity      不透明度 (0-255)
      * @param hotkeyNumber 快捷键编号 (1-9, 0)，null 表示无快捷键
      */
-    fun renderCard(ctx: GuiGraphics, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int? = null) {
+    fun renderCard(ctx: GuiGraphicsExtractor, player: PlayerInfo, cardX: Int, cardY: Int, teamName: String, teamColor: String, opacity: Int, hotkeyNumber: Int? = null) {
         val config = HudConfig.data
 
         val layout = buildLayout(cardX, cardY, config)
@@ -208,7 +208,7 @@ object PlayerCardRenderer {
         )
     }
 
-    private fun renderAvatarSection(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderAvatarSection(ctx: GuiGraphicsExtractor, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         if (!layout.showAvatar) return
 
         renderAvatarNameFrame(
@@ -231,7 +231,7 @@ object PlayerCardRenderer {
         )
     }
 
-    private fun renderEquipmentSection(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderEquipmentSection(ctx: GuiGraphicsExtractor, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         if (!layout.showEquipment) return
         renderHandIcons(ctx, player, layout.handX, layout.handY, opacity)
     }
@@ -239,7 +239,7 @@ object PlayerCardRenderer {
     /**
      * 渲染玩家的所有活跃动画
      */
-    private fun renderPlayerAnimations(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderPlayerAnimations(ctx: GuiGraphicsExtractor, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         val animations = PlayerAnimationManager.getAnimations(player.uuid)
         animations.forEach { animation ->
             animation.render(ctx, layout.cardX, layout.cardY, opacity)
@@ -253,12 +253,12 @@ object PlayerCardRenderer {
     /**
      * 渲染卡片背景
      * 
-     * @param ctx    GuiGraphics 上下文
+     * @param ctx    GuiGraphicsExtractor 上下文
      * @param cardX  卡片左上角 X
      * @param cardY  卡片左上角 Y
      * @param opacity 不透明度 (0-255)
      */
-    private fun renderCardBackground(ctx: GuiGraphics, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderCardBackground(ctx: GuiGraphicsExtractor, layout: RenderLayoutSnapshot, opacity: Int) {
         val cardX = layout.cardX
         val cardY = layout.cardY
         val alpha = (opacity * 0.92f).toInt().coerceIn(0, 255) // rgba(23, 28, 36, 0.92)
@@ -284,12 +284,12 @@ object PlayerCardRenderer {
     /**
      * 绘制卡片边框
      *
-     * @param ctx    GuiGraphics 上下文
+     * @param ctx    GuiGraphicsExtractor 上下文
      * @param cardX  卡片左上角 X
      * @param cardY  卡片左上角 Y
      * @param opacity 不透明度 (0-255)
      */
-    private fun drawCardBorder(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+    private fun drawCardBorder(ctx: GuiGraphicsExtractor, cardX: Int, cardY: Int, opacity: Int) {
         val borderColor = (opacity shl 24) or COLOR_LINE
         val borderWidth = 1
         
@@ -304,7 +304,7 @@ object PlayerCardRenderer {
     }
 
     private fun renderAvatarNameFrame(
-        ctx: GuiGraphics,
+        ctx: GuiGraphicsExtractor,
         areaX: Int,
         areaWidth: Int,
         areaY: Int,
@@ -346,7 +346,7 @@ object PlayerCardRenderer {
     // ──────────────────────────────────────────────────────────────
 
     private fun renderAvatar(
-        ctx: GuiGraphics,
+        ctx: GuiGraphicsExtractor,
         player: PlayerInfo,
         x: Int,
         y: Int,
@@ -364,7 +364,7 @@ object PlayerCardRenderer {
     }
 
     private fun renderAvatarGround(
-        ctx: GuiGraphics,
+        ctx: GuiGraphicsExtractor,
         player: PlayerInfo,
         x: Int,
         y: Int,
@@ -431,7 +431,7 @@ object PlayerCardRenderer {
     /**
      * 使用简化版实体渲染：固定正面朝向，不跟随鼠标。
      */
-    private fun renderAvatar3D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, frameBottom: Int): Boolean {
+    private fun renderAvatar3D(ctx: GuiGraphicsExtractor, player: PlayerInfo, x: Int, y: Int, frameBottom: Int): Boolean {
         val preview = getOrCreatePreviewPlayer(player) ?: return false
 
         return runCatching {
@@ -459,7 +459,7 @@ object PlayerCardRenderer {
             // Bottom clip follows the full-body frame bottom rather than the avatar's feet box.
             val clipBottom = frameBottom
             suppressEntityNameTag(state)
-            ctx.submitEntityRenderState(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, clipBottom)
+            ctx.entity(state, scale, translation, rotation, cameraAngle, x, clipTop, x + L.FULL_BODY_WIDTH, clipBottom)
         }.isSuccess
     }
 
@@ -520,7 +520,7 @@ object PlayerCardRenderer {
         return state
     }
 
-    private fun renderAvatarFallback2D(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    private fun renderAvatarFallback2D(ctx: GuiGraphicsExtractor, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val client = Minecraft.getInstance()
 
         // 优先：从本地 SkinManager 获取并绘制全身像
@@ -548,7 +548,7 @@ object PlayerCardRenderer {
         val font = client.font
         ctx.fill(x, y, x + L.FULL_BODY_WIDTH, y + L.FULL_BODY_HEIGHT, (opacity shl 24) or 0x2D3A4A)
         val initial = player.name.take(1).uppercase()
-        ctx.drawString(
+        ctx.text(
             font, initial,
             x + (L.FULL_BODY_WIDTH - font.width(initial)) / 2,
             y + (L.FULL_BODY_HEIGHT - 8) / 2,
@@ -559,7 +559,7 @@ object PlayerCardRenderer {
     /**
      * 从标准皮肤贴图中绘制全身正面（底层 + 覆盖层）
      */
-    private fun blitFullBody(ctx: GuiGraphics, texture: Identifier, x: Int, y: Int) {
+    private fun blitFullBody(ctx: GuiGraphicsExtractor, texture: Identifier, x: Int, y: Int) {
         withPose(ctx, x.toFloat(), y.toFloat(), L.FULL_BODY_WIDTH / 16f, L.FULL_BODY_HEIGHT / 32f) {
             // Head
             blitSkinPart(ctx, texture, 4, 0, 8, 8, 8f, 8f, 8, 8)
@@ -581,7 +581,7 @@ object PlayerCardRenderer {
     }
 
     private fun blitSkinPart(
-        ctx: GuiGraphics,
+        ctx: GuiGraphicsExtractor,
         texture: Identifier,
         x: Int,
         y: Int,
@@ -612,7 +612,7 @@ object PlayerCardRenderer {
     //  名称
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderName(ctx: GuiGraphics, player: PlayerInfo, teamColor: String, x: Int, y: Int, width: Int, opacity: Int) {
+    private fun renderName(ctx: GuiGraphicsExtractor, player: PlayerInfo, teamColor: String, x: Int, y: Int, width: Int, opacity: Int) {
         val font = Minecraft.getInstance().font
         val nameColor = (opacity shl 24) or parseTeamColor(teamColor)
         val scale = 0.4f  // 增大文字（从 0.5f 提升到 0.6f）
@@ -634,7 +634,7 @@ object PlayerCardRenderer {
         withPose(ctx, x.toFloat(), y.toFloat(), scale, scale) {
             val textWidth = font.width(displayName)
             val textX = (width / scale / 2f - textWidth / 2f).toInt()
-            ctx.drawString(font, displayName, textX, 0, nameColor, false)
+            ctx.text(font, displayName, textX, 0, nameColor, false)
         }
     }
 
@@ -647,7 +647,7 @@ object PlayerCardRenderer {
      * 使用队伍颜色，居中显示
      * 如果有快捷键编号，则在队伍名称前面添加编号
      */
-    private fun renderTeamNameAtEffectPosition(ctx: GuiGraphics, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int, hotkeyNumber: Int? = null) {
+    private fun renderTeamNameAtEffectPosition(ctx: GuiGraphicsExtractor, teamName: String, teamColor: String, cardX: Int, y: Int, opacity: Int, hotkeyNumber: Int? = null) {
         val font = Minecraft.getInstance().font
         val rgb = parseTeamColor(teamColor)
         val teamColorInt = (opacity shl 24) or rgb
@@ -670,10 +670,10 @@ object PlayerCardRenderer {
             if (hotkeyNumber != null) {
                 val hotkeyText = "[$hotkeyNumber] "
                 val hotkeyWidth = font.width(hotkeyText)
-                ctx.drawString(font, hotkeyText, textX, 0, hotkeyColor, false)
-                ctx.drawString(font, teamName, textX + hotkeyWidth, 0, teamColorInt, false)
+                ctx.text(font, hotkeyText, textX, 0, hotkeyColor, false)
+                ctx.text(font, teamName, textX + hotkeyWidth, 0, teamColorInt, false)
             } else {
-                ctx.drawString(font, displayText, textX, 0, teamColorInt, false)
+                ctx.text(font, displayText, textX, 0, teamColorInt, false)
             }
         }
     }
@@ -685,13 +685,13 @@ object PlayerCardRenderer {
     /**
      * 在卡片右下角渲染快捷键编号（当有效果时使用）
      *
-     * @param ctx          GuiGraphics 上下文
+     * @param ctx          GuiGraphicsExtractor 上下文
      * @param hotkeyNumber 快捷键编号 (1-9, 0)
      * @param cardX        卡片左上角 X
      * @param cardY        卡片左上角 Y
      * @param opacity      不透明度 (0-255)
      */
-    private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphics, hotkeyNumber: Int, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderHotkeyNumberAtBottomRight(ctx: GuiGraphicsExtractor, hotkeyNumber: Int, layout: RenderLayoutSnapshot, opacity: Int) {
         val font = Minecraft.getInstance().font
         val hotkeyText = hotkeyNumber.toString()
         val badgeScale = 0.5f
@@ -732,7 +732,7 @@ object PlayerCardRenderer {
 
             val textX = (rawBadgeWidth - textWidth) / 2
             val textY = (rawBadgeHeight - font.lineHeight) / 2
-            ctx.drawString(font, hotkeyText, textX, textY, textColor, false)
+            ctx.text(font, hotkeyText, textX, textY, textColor, false)
         }
     }
 
@@ -741,7 +741,7 @@ object PlayerCardRenderer {
     // ──────────────────────────────────────────────────────────────
 
     // 血量条：简洁纯色深红样式
-    private fun renderHealthBar(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderHealthBar(ctx: GuiGraphicsExtractor, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         val clampedHealth = player.health.coerceAtLeast(0.0)
         val clampedMaxHealth = player.maxHealth.coerceAtLeast(1.0)
         val healthRatio = (clampedHealth / clampedMaxHealth).toFloat().coerceIn(0f, 1f)
@@ -755,7 +755,7 @@ object PlayerCardRenderer {
     }
 
     // 底部血量值：心形与数字共用同一垂直偏移。
-    private fun renderHealthValue(ctx: GuiGraphics, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderHealthValue(ctx: GuiGraphicsExtractor, player: PlayerInfo, layout: RenderLayoutSnapshot, opacity: Int) {
         val font = Minecraft.getInstance().font
         val startX = layout.healthRowLeftX
         val iconSize = L.HEART_ICON_SIZE.coerceAtLeast(6)
@@ -774,11 +774,11 @@ object PlayerCardRenderer {
             val textY = ((iconSize - font.lineHeight) / 2).coerceAtLeast(0) + HEALTH_VALUE_ROW_Y_OFFSET
 
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, heartTexture, leftX, iconY, iconSize, iconSize)
-            ctx.drawString(font, healthText, textX, textY, textColor, true)
+            ctx.text(font, healthText, textX, textY, textColor, true)
         }
     }
 
-    private fun drawHealthBar(ctx: GuiGraphics, x: Int, y: Int, width: Int, height: Int, ratio: Float, opacity: Int) {
+    private fun drawHealthBar(ctx: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, ratio: Float, opacity: Int) {
         if (width <= 0 || height <= 0) return
 
         val trackColor = (((opacity * 0.50f).toInt().coerceIn(0, 255)) shl 24) or COLOR_HP_BAR_TRACK
@@ -807,7 +807,7 @@ object PlayerCardRenderer {
     //  主副手图标（竖向排列）
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderHandIcons(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    private fun renderHandIcons(ctx: GuiGraphicsExtractor, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         val eq = player.equipment
         // 主手在上方
         renderItemSlotWithBorder(ctx, eq.mainHand, x, y, opacity)
@@ -819,7 +819,7 @@ object PlayerCardRenderer {
     //  效果徽章
     // ──────────────────────────────────────────────────────────────
 
-    private fun renderEffectBadgesVertical(ctx: GuiGraphics, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
+    private fun renderEffectBadgesVertical(ctx: GuiGraphicsExtractor, player: PlayerInfo, x: Int, y: Int, opacity: Int) {
         if (player.effects.isEmpty()) return
         val font = Minecraft.getInstance().font
         val badgeStep = L.EFFECT_BADGE_SIZE + L.EFFECT_BADGE_GAP + 2  // 每个徽章占用的高度（含外框）
@@ -865,13 +865,13 @@ object PlayerCardRenderer {
                 ctx.fill(bgLeft, bgTop, bgRight, bgBottom, numeralBg)
 
                 withPose(ctx, romanX.toFloat(), romanY.toFloat(), numScale, numScale) {
-                    ctx.drawString(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
+                    ctx.text(font, roman, 0, 0, (opacity shl 24) or 0xFFFFFF, true)
                 }
             }
         }
     }
 
-    private fun renderVanillaEffectBadgeBackground(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
+    private fun renderVanillaEffectBadgeBackground(ctx: GuiGraphicsExtractor, x: Int, y: Int, size: Int, opacity: Int) {
         val drewVanilla = runCatching {
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, vanillaEffectBadgeBackground, x, y, size, size)
         }.isSuccess
@@ -936,7 +936,7 @@ object PlayerCardRenderer {
     /**
      * 渲染带白色外框的标准物品槽位（用于主副手）
      */
-    private fun renderItemSlotWithBorder(ctx: GuiGraphics, itemId: String?, x: Int, y: Int, opacity: Int) {
+    private fun renderItemSlotWithBorder(ctx: GuiGraphicsExtractor, itemId: String?, x: Int, y: Int, opacity: Int) {
         val size = L.HAND_SLOT_SIZE
         // 背景
         val bgAlpha = (opacity * 0.4f).toInt().coerceIn(0, 255)
@@ -951,7 +951,7 @@ object PlayerCardRenderer {
 
         withPose(ctx, x.toFloat(), y.toFloat(), size / 16f, size / 16f) {
             try {
-                ctx.renderItem(stack, 0, 0)
+                ctx.item(stack, 0, 0)
             } catch (_: Exception) {
                 // 物品渲染异常时静默忽略
             }
@@ -982,7 +982,7 @@ object PlayerCardRenderer {
     /**
      * 在头像周围渲染黄色高亮框
      */
-    private fun renderCardSpectateHighlight(ctx: GuiGraphics, layout: RenderLayoutSnapshot, opacity: Int) {
+    private fun renderCardSpectateHighlight(ctx: GuiGraphicsExtractor, layout: RenderLayoutSnapshot, opacity: Int) {
         val cardX = layout.cardX
         val cardY = layout.cardY
         val alpha = (opacity * 0.9f).toInt().coerceIn(0, 255)
@@ -1002,7 +1002,7 @@ object PlayerCardRenderer {
     /**
      * 在指定的 transform 下执行绘制操作（会自动 push/pop 矩阵）
      */
-    private inline fun withPose(ctx: GuiGraphics, tx: Float, ty: Float, sx: Float, sy: Float, block: (GuiGraphics) -> Unit) {
+    private inline fun withPose(ctx: GuiGraphicsExtractor, tx: Float, ty: Float, sx: Float, sy: Float, block: (GuiGraphicsExtractor) -> Unit) {
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(tx, ty)
@@ -1017,12 +1017,12 @@ object PlayerCardRenderer {
     /**
      * 绘制细白色边框（通过 0.5 倍缩放实现更细的边框线），接收任意大小的槽位
      */
-    private fun drawThinBorder(ctx: GuiGraphics, x: Int, y: Int, size: Int, opacity: Int) {
+    private fun drawThinBorder(ctx: GuiGraphicsExtractor, x: Int, y: Int, size: Int, opacity: Int) {
         val borderColor = (opacity shl 24) or COLOR_LINE_SOFT // Line Soft
         drawThinBorderWithColor(ctx, x, y, size, borderColor)
     }
 
-    private fun drawThinBorderWithColor(ctx: GuiGraphics, x: Int, y: Int, size: Int, borderColor: Int) {
+    private fun drawThinBorderWithColor(ctx: GuiGraphicsExtractor, x: Int, y: Int, size: Int, borderColor: Int) {
         // 使用缩放到 0.5 来绘制更细的边框
         withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
             val scaledSize = size * 2
@@ -1037,7 +1037,7 @@ object PlayerCardRenderer {
         }
     }
 
-    private fun drawThinRectBorderWithColor(ctx: GuiGraphics, x: Int, y: Int, width: Int, height: Int, borderColor: Int) {
+    private fun drawThinRectBorderWithColor(ctx: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, borderColor: Int) {
         if (width <= 0 || height <= 0) return
         withPose(ctx, x.toFloat(), y.toFloat(), 0.5f, 0.5f) {
             val scaledW = width * 2

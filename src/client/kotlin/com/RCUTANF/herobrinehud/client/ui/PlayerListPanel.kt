@@ -5,7 +5,7 @@ import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.ObjectSelectionList
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
@@ -45,8 +45,8 @@ class PlayerListPanel(
 
     inner class PlayerEntry(val player: PlayerInfo) : Entry<PlayerEntry>() {
 
-        override fun renderContent(
-            guiGraphics: GuiGraphics,
+        override fun extractContent(
+            guiGraphics: GuiGraphicsExtractor,
             mouseX: Int,
             mouseY: Int,
             isHovering: Boolean,
@@ -72,12 +72,12 @@ class PlayerListPanel(
 
             // 玩家显示名
             val displayName = player.displayName.ifBlank { player.name }
-            guiGraphics.drawString(font, displayName, left + 9, top + 3, 0xFFFFFFFF.toInt(), false)
+            guiGraphics.text(font, displayName, left + 9, top + 3, 0xFFFFFFFF.toInt(), false)
 
             // 队伍标签（小字）
             val teamLabel = findTeamDisplayName(player)
             if (teamLabel.isNotEmpty()) {
-                guiGraphics.drawString(font, teamLabel, left + 9, top + 13, 0xFFAAAAAA.toInt(), false)
+                guiGraphics.text(font, teamLabel, left + 9, top + 13, 0xFFAAAAAA.toInt(), false)
             }
 
             // 绘制三个移动按钮
@@ -95,7 +95,7 @@ class PlayerListPanel(
             drawButton(guiGraphics, "✕", noneX,  by, side != DisplaySide.NONE,  mouseX, mouseY)
         }
 
-        private fun drawButton(g: GuiGraphics, label: String, x: Int, y: Int, enabled: Boolean, mx: Int, my: Int) {
+        private fun drawButton(g: GuiGraphicsExtractor, label: String, x: Int, y: Int, enabled: Boolean, mx: Int, my: Int) {
             val hovered = enabled && mx >= x && mx < x + BTN_W && my >= y && my < y + 14
             val bgColor = when {
                 !enabled -> 0x33333333
@@ -106,7 +106,7 @@ class PlayerListPanel(
             val textColor = if (enabled) 0xFFFFFFFF.toInt() else 0xFF666666.toInt()
             val font = minecraft.font
             val tw = font.width(label)
-            g.drawString(font, label, x + (BTN_W - tw) / 2, y + 3, textColor, false)
+            g.text(font, label, x + (BTN_W - tw) / 2, y + 3, textColor, false)
         }
 
         override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
@@ -183,12 +183,12 @@ class PlayerListPanel(
     //  背景渲染（覆盖默认的材质背景）
     // ──────────────────────────────────────────────────────────
 
-    override fun renderListBackground(guiGraphics: GuiGraphics) {
+    override fun extractListBackground(guiGraphics: GuiGraphicsExtractor) {
         // 绘制半透明背景，替代默认的材质背景
         guiGraphics.fill(x, y, x + width, bottom, 0x55000000)
     }
 
-    override fun renderListSeparators(guiGraphics: GuiGraphics) {
+    override fun extractListSeparators(guiGraphics: GuiGraphicsExtractor) {
         // 不渲染分隔线
     }
 }

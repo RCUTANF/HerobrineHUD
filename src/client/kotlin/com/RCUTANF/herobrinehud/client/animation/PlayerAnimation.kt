@@ -1,6 +1,7 @@
 package com.RCUTANF.herobrinehud.client.animation
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
+
 
 /**
  * 玩家动画基类
@@ -31,5 +32,5 @@ abstract class PlayerAnimation(
      * @param cardY 卡片Y坐标
      * @param opacity 卡片不透明度
      */
-    abstract fun render(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int)
+    abstract fun render(ctx: GuiGraphicsExtractor, cardX: Int, cardY: Int, opacity: Int)
 }

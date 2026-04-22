@@ -68,14 +68,14 @@ class Herobrinehud : ModInitializer {
      */
     private fun registerPayloads() {
         // S2C payloads（服务端发给客户端）
-        PayloadTypeRegistry.playS2C().register(HudPayloadIds.FULL_SYNC, FullSyncPayload.STREAM_CODEC)
-        PayloadTypeRegistry.playS2C().register(HudPayloadIds.INCREMENTAL_UPDATE, IncrementalUpdatePayload.STREAM_CODEC)
+        PayloadTypeRegistry.clientboundPlay().register(HudPayloadIds.FULL_SYNC, FullSyncPayload.STREAM_CODEC)
+        PayloadTypeRegistry.clientboundPlay().register(HudPayloadIds.INCREMENTAL_UPDATE, IncrementalUpdatePayload.STREAM_CODEC)
 
         // C2S payloads（客户端发给服务端）
-        PayloadTypeRegistry.playC2S().register(HudPayloadIds.SUBSCRIBE, SubscribePayload.STREAM_CODEC)
-        PayloadTypeRegistry.playC2S().register(HudPayloadIds.UNSUBSCRIBE, UnsubscribePayload.STREAM_CODEC)
+        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.SUBSCRIBE, SubscribePayload.STREAM_CODEC)
+        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.UNSUBSCRIBE, UnsubscribePayload.STREAM_CODEC)
 
-        PayloadTypeRegistry.playC2S().register(HudPayloadIds.SPECTATE_PLAYER, SpectatePlayerPayload.STREAM_CODEC)
+        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.SPECTATE_PLAYER, SpectatePlayerPayload.STREAM_CODEC)
     }
 
     /**

@@ -2,7 +2,7 @@ package com.RCUTANF.herobrinehud.client.animation
 
 import com.RCUTANF.herobrinehud.client.ui.CardLayout
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 
 /**
  * 数值变化动画（通用）
@@ -17,7 +17,7 @@ class NumericChangeAnimation(
     duration: Long = 1500
 ) : PlayerAnimation(playerUuid, duration = duration) {
     
-    override fun render(ctx: GuiGraphics, cardX: Int, cardY: Int, opacity: Int) {
+    override fun render(ctx: GuiGraphicsExtractor, cardX: Int, cardY: Int, opacity: Int) {
         val progress = getProgress()
         if (progress >= 1.0f) return
         
@@ -41,6 +41,6 @@ class NumericChangeAnimation(
         
         // 绘制文字（带阴影）
         val finalColor = (alpha shl 24) or (color and 0xFFFFFF)
-        ctx.drawString(font, text, x, y, finalColor, true)
+        ctx.text(font, text, x, y, finalColor, true)
     }
 }

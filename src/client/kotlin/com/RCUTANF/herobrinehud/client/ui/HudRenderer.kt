@@ -4,10 +4,10 @@ import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.data.PlayerInfo
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 
 /**
  * HUD 渲染器
@@ -16,11 +16,12 @@ import net.minecraft.client.gui.GuiGraphics
  * 玩家按 uuid 独立分配到 LEFT / RIGHT 侧，与队伍无关。
  * 布局：左下角从左往右排列，右下角从左往右排列但最右边贴屏幕右下角
  */
-object HudRenderer : HudRenderCallback {
+object HudRenderer: HudElement {
 
     private val L = CardLayout
 
-    override fun onHudRender(drawContext: GuiGraphics, tickCounter: DeltaTracker) {
+    override fun extractRenderState(drawContext: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
+        // tickCounter is kept for API parity with hud element callbacks.
         if (!HudSelectionState.isHudVisible()) return
         if (!HudSelectionState.hasValidSelection()) return
         if (!ClientTeamData.isSynced) return
