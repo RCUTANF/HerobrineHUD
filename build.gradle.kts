@@ -12,7 +12,11 @@ version = project.property("mod_version") as String
 group = project.property("maven_group") as String
 
 base {
-    archivesName.set(project.property("archives_base_name") as String)
+    // Append the targeted Minecraft version to the archive name so generated jars
+    // include the minecraft version (e.g. mymod-1.20.4.jar).
+    val baseName = project.property("archives_base_name") as String
+    val mcVersion = project.property("minecraft_version") as String
+    archivesName.set("$baseName-$mcVersion")
 }
 
 val targetJavaVersion = 25
@@ -100,7 +104,9 @@ tasks.jar {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = project.property("archives_base_name") as String
+            // Make the published artifactId include the Minecraft version to match the
+            // produced archive name (e.g. herobrinehud-26.1)
+            artifactId = "${project.property("archives_base_name") as String}-${project.property("minecraft_version") as String}"
             from(components["java"])
         }
     }
