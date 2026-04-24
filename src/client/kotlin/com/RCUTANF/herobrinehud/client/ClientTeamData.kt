@@ -132,9 +132,9 @@ object ClientTeamData {
             teams.clear()
             teams.putAll(data.teams)
             isSynced = true
-            LOGGER.info("收到全量同步，共 {} 支队伍", teams.size)
+            LOGGER.info("Received full sync, {} teams", teams.size)
         } catch (e: Exception) {
-            LOGGER.error("解析全量同步数据失败: {}", e.message)
+            LOGGER.error("Failed to parse full sync data: {}", e.message)
         }
         //初始化playerHotKeyMap
         HudSelectionState.updateHotkeyMappings()
@@ -149,7 +149,7 @@ object ClientTeamData {
                 UpdateType.TEAM_ADDED -> {
                     val data = json.decodeFromString<TeamUpdateData>(jsonStr)
                     teams[data.team.name] = data.team
-                    LOGGER.debug("队伍新增: {}", data.team.name)
+                    LOGGER.debug("Team added: {}", data.team.name)
 
                     HudSelectionState.updateHotkeyMappings()
                 }
@@ -157,7 +157,7 @@ object ClientTeamData {
                 UpdateType.TEAM_REMOVED -> {
                     val data = json.decodeFromString<TeamRemovedData>(jsonStr)
                     teams.remove(data.teamName)
-                    LOGGER.debug("队伍移除: {}", data.teamName)
+                    LOGGER.debug("Team removed: {}", data.teamName)
 
                     HudSelectionState.updateHotkeyMappings()
                 }
@@ -165,7 +165,7 @@ object ClientTeamData {
                 UpdateType.TEAM_MODIFIED -> {
                     val data = json.decodeFromString<TeamUpdateData>(jsonStr)
                     teams[data.team.name] = data.team
-                    LOGGER.debug("队伍修改: {}", data.team.name)
+                    LOGGER.debug("Team modified: {}", data.team.name)
 
                     HudSelectionState.updateHotkeyMappings()
                 }
@@ -177,7 +177,7 @@ object ClientTeamData {
                         if (teamInfo.players.none { it.name == data.player.name }) {
                             teamInfo.players.add(data.player)
                         }
-                        LOGGER.debug("玩家 {} 加入队伍 {}", data.player.name, data.teamName)
+                        LOGGER.debug("Player {} joined team {}", data.player.name, data.teamName)
 
                         HudSelectionState.updateHotkeyMappings()
                     }
@@ -187,7 +187,7 @@ object ClientTeamData {
                     val data = json.decodeFromString<PlayerLeftTeamData>(jsonStr)
                     val teamInfo = teams[data.teamName]
                     teamInfo?.players?.removeIf { it.name == data.playerName }
-                    LOGGER.debug("玩家 {} 离开队伍 {}", data.playerName, data.teamName)
+                    LOGGER.debug("Player {} left team {}", data.playerName, data.teamName)
 
                     HudSelectionState.updateHotkeyMappings()
                 }
@@ -216,7 +216,7 @@ object ClientTeamData {
                         // 更新快照
                         playerSnapshots[data.player.uuid] = data.player.copy()
                         
-                        LOGGER.debug("玩家 {} 数据已更新", data.player.name)
+                        LOGGER.debug("Player {} data updated", data.player.name)
                         HudSelectionState.updateHotkeyMappings()
                     }
                 }
@@ -233,7 +233,7 @@ object ClientTeamData {
                             player.dimension = null
                             player.effects.clear()
                             player.equipment = Equipment()
-                            LOGGER.debug("玩家 {} 已标记离线", data.playerName)
+                            LOGGER.debug("Player {} marked offline", data.playerName)
                             break
                         }
                     }
@@ -241,11 +241,11 @@ object ClientTeamData {
                 }
 
                 else -> {
-                    LOGGER.warn("收到未知增量更新类型: {}", updateType)
+                    LOGGER.warn("Received unknown incremental update type: {}", updateType)
                 }
             }
         } catch (e: Exception) {
-            LOGGER.error("解析增量更新数据失败 (type={}): {}", updateType, e.message)
+            LOGGER.error("Failed to parse incremental update (type={}): {}", updateType, e.message)
         }
     }
 
@@ -259,7 +259,7 @@ object ClientTeamData {
         spectatingPlayerUuid = null
         playerSnapshots.clear()
         PlayerAnimationManager.clearAll()
-        LOGGER.info("客户端队伍数据缓存已清空")
+        LOGGER.info("Client team data cache cleared")
     }
 }
 

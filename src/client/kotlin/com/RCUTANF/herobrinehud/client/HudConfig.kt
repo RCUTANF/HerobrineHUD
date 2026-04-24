@@ -34,13 +34,13 @@ object HudConfig {
             if (Files.exists(configPath)) {
                 val content = Files.readString(configPath)
                 data = json.decodeFromString<ConfigData>(content)
-                LOGGER.info("已加载 HUD 配置")
+                LOGGER.info("HUD configuration loaded")
             } else {
-                LOGGER.info("未找到 HUD 配置文件，使用默认设置")
+                LOGGER.info("HUD config not found, using defaults")
                 save()
             }
         } catch (e: Exception) {
-            LOGGER.error("加载 HUD 配置失败: {}", e.message)
+            LOGGER.error("Failed to load HUD config: {}", e.message)
             data = ConfigData()
         }
     }
@@ -52,9 +52,9 @@ object HudConfig {
         try {
             Files.createDirectories(configPath.parent)
             Files.writeString(configPath, json.encodeToString<ConfigData>(data))
-            LOGGER.info("HUD 配置已保存")
+            LOGGER.info("HUD configuration saved")
         } catch (e: Exception) {
-            LOGGER.error("保存 HUD 配置失败: {}", e.message)
+            LOGGER.error("Failed to save HUD config: {}", e.message)
         }
     }
 

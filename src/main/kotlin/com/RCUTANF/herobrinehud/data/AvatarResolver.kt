@@ -28,20 +28,20 @@ object AvatarResolver {
         // 1. 尝试从 textures 属性中解析皮肤 URL
         val skinUrl = extractSkinUrl(profile)
         if (skinUrl != null) {
-            LOGGER.debug("玩家 {} 皮肤 URL 解析成功: {}", profile.name, skinUrl)
+            LOGGER.debug("Player {} skin URL resolved: {}", profile.name, skinUrl)
             return skinUrl
         }
 
         // 2. 回退：使用 Crafatar（基于 UUID，自动代理 Mojang 皮肤）
         if (uuid != null && uuid.isNotBlank() && uuid != "00000000-0000-0000-0000-000000000000") {
             val crafatarUrl = "https://crafatar.com/avatars/$uuid?size=64&overlay"
-            LOGGER.debug("玩家 {} 使用 Crafatar 头像: {}", profile.name, crafatarUrl)
+            LOGGER.debug("Player {} using Crafatar avatar: {}", profile.name, crafatarUrl)
             return crafatarUrl
         }
 
         // 3. 离线玩家回退：使用 Minotar（基于名称）
         val minotarUrl = "https://minotar.net/helm/${profile.name}/64"
-        LOGGER.debug("玩家 {} 使用 Minotar 头像（离线）: {}", profile.name, minotarUrl)
+        LOGGER.debug("Player {} using Minotar avatar (offline): {}", profile.name, minotarUrl)
         return minotarUrl
     }
 
@@ -80,7 +80,7 @@ object AvatarResolver {
             val match = skinUrlRegex.find(decoded)
             match?.groupValues?.get(1)
         } catch (e: Exception) {
-            LOGGER.debug("解析 textures 属性失败: {}", e.message)
+            LOGGER.debug("Failed to parse textures property: {}", e.message)
             null
         }
     }

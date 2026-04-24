@@ -35,7 +35,7 @@ object HudSelectionState {
                 playerPlacements[uuid] = PlayerPlacement(uuid = uuid, side = side)
             }
         }
-        LOGGER.debug("玩家 {} 分配至 {}", uuid, side)
+        LOGGER.debug("Player {} assigned to {}", uuid, side)
         // 更新快捷键映射
         updateHotkeyMappings()
     }
@@ -118,7 +118,7 @@ object HudSelectionState {
                 }
             }
         }
-        LOGGER.info("队伍 {} 批量分配至 {}", teamName, side)
+        LOGGER.info("Team {} batch assigned to {}", teamName, side)
         // 更新快捷键映射
         updateHotkeyMappings()
     }
@@ -138,7 +138,7 @@ object HudSelectionState {
                 playerPlacements[p.uuid] = p.copy(side = newSide)
             }
         }
-        LOGGER.info("左右侧玩家已交换")
+        LOGGER.info("Left and right player assignments swapped")
         // 更新快捷键映射
         updateHotkeyMappings()
     }
@@ -150,7 +150,7 @@ object HudSelectionState {
         HudConfig.update {
             playerPlacements.clear()
         }
-        LOGGER.info("已清空所有 HUD 分配")
+        LOGGER.info("Cleared all HUD assignments")
         // 清空快捷键映射
         ClientTeamData.clearHotkeyMappings()
     }

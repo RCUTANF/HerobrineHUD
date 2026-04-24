@@ -20,7 +20,7 @@ class Herobrinehud : ModInitializer {
     }
 
     override fun onInitialize() {
-        LOGGER.info("HerobrineHUD 正在初始化...")
+        LOGGER.info("HerobrineHUD initializing...")
 
         // ──────────────── 注册网络 Payload 类型 ────────────────
         registerPayloads()
@@ -60,7 +60,7 @@ class Herobrinehud : ModInitializer {
         // ──────────────── C2S 网络接收器 ────────────────
         registerC2SReceivers()
 
-        LOGGER.info("HerobrineHUD 初始化完成！")
+        LOGGER.info("HerobrineHUD initialization complete!")
     }
 
     /**
@@ -102,19 +102,19 @@ class Herobrinehud : ModInitializer {
                 val targetPlayer = context.server().playerList.getPlayer(targetUuid)
 
                 if (targetPlayer == null) {
-                    LOGGER.warn("玩家 {} 请求旁观不存在的玩家: {}", requester.name.string, targetUuid)
+                    LOGGER.warn("Player {} requested to spectate non-existent player: {}", requester.name.string, targetUuid)
                     return@execute
                 }
 
                 // 检查请求者是否处于旁观模式
                 if (!requester.isSpectator) {
-                    LOGGER.warn("玩家 {} 不在旁观模式，无法切换旁观目标", requester.name.string)
+                    LOGGER.warn("Player {} is not in spectator mode and cannot change spectate target", requester.name.string)
                     return@execute
                 }
 
                 // 设置旁观目标
                 requester.setCamera(targetPlayer)
-                LOGGER.info("玩家 {} 开始旁观 {}", requester.name.string, targetPlayer.name.string)
+                LOGGER.info("Player {} started spectating {}", requester.name.string, targetPlayer.name.string)
             }
         }
     }

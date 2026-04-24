@@ -81,7 +81,7 @@ object ModKeybindings {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             while (TOGGLE_HUD.consumeClick()) {
                 HudSelectionState.toggleHudVisibility()
-                LOGGER.info("HUD 可见性切换为: {}", HudSelectionState.isHudVisible())
+                LOGGER.info("HUD visibility toggled: {}", HudSelectionState.isHudVisible())
             }
 
             while (OPEN_SELECTION.consumeClick()) {

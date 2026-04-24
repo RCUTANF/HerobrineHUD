@@ -38,7 +38,7 @@ object TeamSyncManager {
     fun subscribe(player: ServerPlayer) {
         val uuid = player.uuid.toString()
         subscribers[uuid] = player
-        LOGGER.info("玩家 {} 已订阅 HUD 数据推送", player.gameProfile.name)
+        LOGGER.info("Player {} subscribed to HUD updates", player.gameProfile.name)
 
         // 立即推送全量数据
         sendFullSync(player)
@@ -51,7 +51,7 @@ object TeamSyncManager {
         val uuid = player.uuid.toString()
         val removed = subscribers.remove(uuid)
         if (removed != null) {
-            LOGGER.info("玩家 {} 已取消订阅 HUD 数据推送", player.gameProfile.name)
+            LOGGER.info("Player {} unsubscribed from HUD updates", player.gameProfile.name)
         }
     }
 
@@ -89,9 +89,9 @@ object TeamSyncManager {
 
         if (ServerPlayNetworking.canSend(player, HudPayloadIds.FULL_SYNC)) {
             ServerPlayNetworking.send(player, payload)
-            LOGGER.debug("已向 {} 发送全量同步（{} 支队伍）", player.gameProfile.name, allTeams.size)
+            LOGGER.debug("Sent full sync to {} ({} teams)", player.gameProfile.name, allTeams.size)
         } else {
-            LOGGER.warn("无法向 {} 发送全量同步（通道未就绪）", player.gameProfile.name)
+            LOGGER.warn("Unable to send full sync to {} (channel not ready)", player.gameProfile.name)
         }
     }
 
@@ -115,7 +115,7 @@ object TeamSyncManager {
                     toRemove.add(uuid)
                 }
             } catch (e: Exception) {
-                LOGGER.warn("向 {} 发送增量更新失败: {}", player.gameProfile.name, e.message)
+                LOGGER.warn("Failed to send incremental update to {}: {}", player.gameProfile.name, e.message)
                 toRemove.add(uuid)
             }
         }

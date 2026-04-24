@@ -37,18 +37,18 @@ object TeamManager {
      */
     fun onServerStarted(server: MinecraftServer) {
         this.server = server
-        LOGGER.info("服务器已启动，开始全量同步队伍数据...")
+        LOGGER.info("Server started, performing full team sync...")
         fullSync(server)
         registerTeamEventListeners()
         registerPlayerDataEventListeners()
-        LOGGER.info("队伍数据同步完成，共 {} 支队伍", teams.size)
+        LOGGER.info("Team data sync complete, {} teams", teams.size)
     }
 
     /**
      * 服务器关闭时清理
      */
     fun onServerStopping(server: MinecraftServer) {
-        LOGGER.info("服务器关闭，清理队伍数据缓存...")
+        LOGGER.info("Server stopping, clearing team cache...")
         teams.clear()
         this.server = null
     }
@@ -65,7 +65,7 @@ object TeamManager {
         for (team in scoreboard.playerTeams) {
             val teamInfo = convertTeam(team, server)
             teams[team.name] = teamInfo
-            LOGGER.debug("同步队伍: {} (成员: {})", team.name, teamInfo.players.size)
+            LOGGER.debug("Synced team: {} (members: {})", team.name, teamInfo.players.size)
         }
     }
 
@@ -79,14 +79,14 @@ object TeamManager {
             val srv = server ?: return@TeamAdded
             val teamInfo = convertTeam(team, srv)
             teams[team.name] = teamInfo
-            LOGGER.info("队伍已创建: {} (颜色: {})", team.name, teamInfo.color)
+                LOGGER.info("Team created: {} (color: {})", team.name, teamInfo.color)
             TeamSyncManager.notifyTeamAdded(teamInfo)
         })
 
         TeamSyncCallback.TEAM_REMOVED.register(TeamSyncCallback.TeamRemoved { team ->
             val removed = teams.remove(team.name)
             if (removed != null) {
-                LOGGER.info("队伍已移除: {}", team.name)
+                LOGGER.info("Team removed: {}", team.name)
                 TeamSyncManager.notifyTeamRemoved(team.name)
             }
         })
@@ -97,12 +97,12 @@ object TeamManager {
             if (existing != null) {
                 val updated = convertTeam(team, srv)
                 teams[team.name] = updated
-                LOGGER.info("队伍已修改: {} (新颜色: {})", team.name, updated.color)
+                LOGGER.info("Team modified: {} (new color: {})", team.name, updated.color)
                 TeamSyncManager.notifyTeamModified(updated)
             } else {
                 val teamInfo = convertTeam(team, srv)
                 teams[team.name] = teamInfo
-                LOGGER.warn("修改了不存在的队伍，已重新创建: {}", team.name)
+                LOGGER.warn("Modified non-existent team; recreated: {}", team.name)
                 TeamSyncManager.notifyTeamAdded(teamInfo)
             }
         })
@@ -114,11 +114,11 @@ object TeamManager {
                 if (teamInfo.players.none { it.name == playerName }) {
                     val playerInfo = resolvePlayerInfo(playerName, srv)
                     teamInfo.players.add(playerInfo)
-                    LOGGER.info("玩家 {} 加入队伍 {}", playerName, team.name)
+                    LOGGER.info("Player {} joined team {}", playerName, team.name)
                     TeamSyncManager.notifyPlayerJoinedTeam(team.name, playerInfo)
                 }
             } else {
-                LOGGER.warn("玩家 {} 加入了不存在的队伍 {}", playerName, team.name)
+                LOGGER.warn("Player {} joined a non-existent team {}", playerName, team.name)
             }
         })
 
@@ -126,7 +126,7 @@ object TeamManager {
             val teamInfo = teams[team.name]
             if (teamInfo != null) {
                 teamInfo.players.removeIf { it.name == playerName }
-                LOGGER.info("玩家 {} 离开队伍 {}", playerName, team.name)
+                LOGGER.info("Player {} left team {}", playerName, team.name)
                 TeamSyncManager.notifyPlayerLeftTeam(team.name, playerName)
             }
         })
@@ -160,7 +160,7 @@ object TeamManager {
             updateAndNotify(player) { info ->
                 info.gamemode = newMode.getName()
             }
-            LOGGER.debug("玩家 {} 游戏模式变更为 {}", player.gameProfile.name, newMode.getName())
+            LOGGER.debug("Player {} gamemode changed to {}", player.gameProfile.name, newMode.getName())
         })
 
         // 维度变化
@@ -168,7 +168,7 @@ object TeamManager {
             updateAndNotify(player) { info ->
                 info.dimension = player.level().dimension().identifier().toString()
             }
-            LOGGER.debug("玩家 {} 维度变更为 {}", player.gameProfile.name, player.level().dimension())
+            LOGGER.debug("Player {} dimension changed to {}", player.gameProfile.name, player.level().dimension())
         })
 
         // 玩家死亡
@@ -177,7 +177,7 @@ object TeamManager {
                 info.isAlive = false
                 info.health = 0.0
             }
-            LOGGER.debug("玩家 {} 已死亡", player.gameProfile.name)
+            LOGGER.debug("Player {} has died", player.gameProfile.name)
         })
 
         // 玩家重生
@@ -187,7 +187,7 @@ object TeamManager {
             if (result != null) {
                 TeamSyncManager.notifyPlayerDataUpdated(result.first, result.second)
             }
-            LOGGER.debug("玩家 {} 已重生", player.gameProfile.name)
+            LOGGER.debug("Player {} has respawned", player.gameProfile.name)
         })
 
         // 药水效果变化
@@ -254,7 +254,7 @@ object TeamManager {
             if (result != null) {
                 TeamSyncManager.notifyPlayerJoinedServer(result.first, result.second)
             }
-            LOGGER.info("玩家 {} 数据加载完成，已刷新队伍数据", player.gameProfile.name)
+            LOGGER.info("Player {} data loaded; refreshed team data", player.gameProfile.name)
         })
 
         // 玩家离开服务器 — 标记为离线状态
@@ -270,7 +270,7 @@ object TeamManager {
                 info.effects.clear()
             }
             TeamSyncManager.notifyPlayerLeftServer(playerName)
-            LOGGER.info("玩家 {} 离开服务器，已标记为离线", playerName)
+            LOGGER.info("Player {} left server; marked offline", playerName)
         })
     }
 

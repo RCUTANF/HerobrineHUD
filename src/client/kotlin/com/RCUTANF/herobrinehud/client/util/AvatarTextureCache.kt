@@ -75,7 +75,7 @@ object AvatarTextureCache {
         if (entry.state == State.READY && entry.location != null) {
             Minecraft.getInstance().execute {
                 Minecraft.getInstance().textureManager.release(entry.location)
-                LOGGER.debug("已释放头像纹理: {}", avatarUrl)
+                LOGGER.debug("Released avatar texture: {}", avatarUrl)
             }
         }
     }
@@ -85,7 +85,7 @@ object AvatarTextureCache {
      */
     fun clear() {
         cache.keys.toList().forEach { evict(it) }
-        LOGGER.debug("头像纹理缓存已清空")
+        LOGGER.debug("Avatar texture cache cleared")
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ object AvatarTextureCache {
     private fun submitDownload(url: String) {
         executor.submit {
             try {
-                LOGGER.debug("开始下载头像: {}", url)
+                LOGGER.debug("Starting download for avatar: {}", url)
 
                 // 直接用 NativeImage.read 解码 PNG 字节流（与 RealmsTextureManager 相同模式）
                 val nativeImage: NativeImage = URI.create(url).toURL().openStream().use { stream ->
@@ -113,14 +113,14 @@ object AvatarTextureCache {
                         Minecraft.getInstance().textureManager.register(location, dynTex)
 
                         cache[url] = Entry(State.READY, location)
-                        LOGGER.debug("头像纹理注册成功: {} -> {}", url, location)
+                        LOGGER.debug("Avatar texture registered: {} -> {}", url, location)
                     } catch (e: Exception) {
-                        LOGGER.warn("注册头像纹理失败 ({}): {}", url, e.message)
+                        LOGGER.warn("Failed to register avatar texture ({}): {}", url, e.message)
                         cache[url] = Entry(State.FAILED)
                     }
                 }
             } catch (e: Exception) {
-                LOGGER.warn("下载头像失败 ({}): {}", url, e.message)
+                LOGGER.warn("Failed to download avatar ({}): {}", url, e.message)
                 cache[url] = Entry(State.FAILED)
             }
         }

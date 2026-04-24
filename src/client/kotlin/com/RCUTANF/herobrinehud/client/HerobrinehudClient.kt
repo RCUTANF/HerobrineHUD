@@ -23,7 +23,7 @@ class HerobrinehudClient : ClientModInitializer {
     }
 
     override fun onInitializeClient() {
-        LOGGER.info("HerobrineHUD 客户端初始化...")
+        LOGGER.info("HerobrineHUD client initializing...")
 
         // 加载持久化配置
         HudConfig.load()
@@ -51,9 +51,9 @@ class HerobrinehudClient : ClientModInitializer {
 
         // 加入服务器后自动发送订阅请求
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
-            if (ClientPlayNetworking.canSend(HudPayloadIds.SUBSCRIBE)) {
+                if (ClientPlayNetworking.canSend(HudPayloadIds.SUBSCRIBE)) {
                 ClientPlayNetworking.send(SubscribePayload())
-                LOGGER.info("已发送 HUD 数据订阅请求")
+                LOGGER.info("Sent HUD subscription request")
             }
         }
 
@@ -64,6 +64,6 @@ class HerobrinehudClient : ClientModInitializer {
             SpectatorTracker.clear()
         }
 
-        LOGGER.info("HerobrineHUD 客户端初始化完成！")
+        LOGGER.info("HerobrineHUD client initialization complete!")
     }
 }
