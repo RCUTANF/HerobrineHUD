@@ -75,4 +75,17 @@ public abstract class LivingEntityMixin {
             }
         }
     }
+
+    @Inject(method = "handleHandSwap", at = @At("TAIL"))
+    private void onHandleHandSwap(Map<EquipmentSlot, ItemStack> hands, CallbackInfo ci) {
+        //noinspection ConstantValue
+        if ((Object) this instanceof ServerPlayer serverPlayer && serverPlayer.getGameProfile() != null) {
+            ItemStack mainHand = serverPlayer.getItemBySlot(EquipmentSlot.MAINHAND);
+            ItemStack offHand = serverPlayer.getItemBySlot(EquipmentSlot.OFFHAND);
+            PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker()
+                    .onEquipmentChanged(serverPlayer, EquipmentSlot.MAINHAND, mainHand);
+            PlayerDataCallback.INSTANCE.getEQUIPMENT_CHANGED().invoker()
+                    .onEquipmentChanged(serverPlayer, EquipmentSlot.OFFHAND, offHand);
+        }
+    }
 }
