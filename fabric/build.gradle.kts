@@ -97,10 +97,12 @@ fun processMixinTemplate(input: String, versionCode: Int): String {
 }
 
 val mixinTemplateDir = file("src/mixin-template")
-val mixinGeneratedDir = layout.buildDirectory.dir("generated/mixin")
+val mixinGeneratedDir = layout.buildDirectory.dir("generated/sources/mixinTemplates")
 
 val generateMixinTemplates = tasks.register("generateMixinTemplates") {
     inputs.dir(mixinTemplateDir)
+    inputs.property("mcVersion", mcVersion)
+    inputs.property("mcVersionCode", mcVersionCode(mcVersion))
     outputs.dir(mixinGeneratedDir)
     doLast {
         if (!mixinTemplateDir.exists()) return@doLast
@@ -201,6 +203,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.fromTarget(targetJavaVersion.toString()))
+    dependsOn(generateMixinTemplates)
 }
 
 tasks.jar {
