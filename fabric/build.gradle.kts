@@ -14,6 +14,7 @@ val mcVersion = (
         ?: findProperty("defaultMcVersion")
         ?: project.property("minecraft_version")
 ).toString()
+val mcSourceDir = "src/mc$mcVersion"
 
 base {
     // Append the targeted Minecraft version to the archive name so generated jars
@@ -28,6 +29,109 @@ java {
     // if it is present.
     // If you remove this line, sources will not be generated.
     withSourcesJar()
+}
+
+fun mcVersionCode(version: String): Int {
+    val parts = version.split('.').mapNotNull { it.toIntOrNull() }
+    return when (parts.size) {
+        2 -> parts[0] * 100 + parts[1] * 10
+        3 -> parts[0] * 1000 + parts[1] * 10 + parts[2]
+        else -> parts.joinToString("").toIntOrNull() ?: 0
+    }
+}
+
+fun processMixinTemplate(input: String, versionCode: Int): String {
+    data class IfState(val parent: Boolean, val condition: Boolean)
+    val directiveRegex = Regex("""^\s*//\s*#(IF|ELSE|ENDIF)\b(.*)$""")
+    val conditionRegex = Regex("""MC_VERSION\s*([<>=!]=?)\s*(\d+)""")
+    val stack = ArrayDeque<IfState>()
+    val output = StringBuilder()
+    var include = true
+
+    input.lineSequence().forEach { line ->
+        val match = directiveRegex.matchEntire(line)
+        if (match != null) {
+            val directive = match.groupValues[1]
+            val tail = match.groupValues[2].trim()
+            when (directive) {
+                "IF" -> {
+                    val condMatch = conditionRegex.find(tail)
+                        ?: throw GradleException("Invalid mixin template condition: $line")
+                    val op = condMatch.groupValues[1]
+                    val value = condMatch.groupValues[2].toInt()
+                    val condition = when (op) {
+                        ">" -> versionCode > value
+                        ">=" -> versionCode >= value
+                        "<" -> versionCode < value
+                        "<=" -> versionCode <= value
+                        "==" -> versionCode == value
+                        "!=" -> versionCode != value
+                        else -> false
+                    }
+                    stack.addLast(IfState(include, condition))
+                    include = include && condition
+                }
+
+                "ELSE" -> {
+                    val state = stack.lastOrNull()
+                        ?: throw GradleException("#ELSE without #IF in mixin template")
+                    include = state.parent && !state.condition
+                }
+
+                "ENDIF" -> {
+                    val state = stack.removeLastOrNull()
+                        ?: throw GradleException("#ENDIF without #IF in mixin template")
+                    include = state.parent
+                }
+            }
+        } else if (include) {
+            output.appendLine(line)
+        }
+    }
+
+    if (stack.isNotEmpty()) {
+        throw GradleException("Unclosed #IF in mixin template")
+    }
+
+    return output.toString()
+}
+
+val mixinTemplateDir = file("src/mixin-template")
+val mixinGeneratedDir = layout.buildDirectory.dir("generated/mixin")
+
+val generateMixinTemplates = tasks.register("generateMixinTemplates") {
+    inputs.dir(mixinTemplateDir)
+    outputs.dir(mixinGeneratedDir)
+    doLast {
+        if (!mixinTemplateDir.exists()) return@doLast
+        val outputDir = mixinGeneratedDir.get().asFile
+        outputDir.deleteRecursively()
+        val versionCode = mcVersionCode(mcVersion)
+        fileTree(mixinTemplateDir).matching { include("**/*.template.java") }.forEach { templateFile ->
+            val relativePath = templateFile.relativeTo(mixinTemplateDir).path
+                .removeSuffix(".template.java") + ".java"
+            val targetFile = outputDir.resolve(relativePath)
+            targetFile.parentFile.mkdirs()
+            val processed = processMixinTemplate(templateFile.readText(), versionCode)
+            targetFile.writeText(processed, Charsets.UTF_8)
+        }
+    }
+}
+
+sourceSets {
+    named("main") {
+        java.srcDir("$mcSourceDir/java")
+        resources.srcDir("$mcSourceDir/resources")
+        java.srcDir(mixinGeneratedDir)
+    }
+}
+
+kotlin {
+    sourceSets {
+        named("main") {
+            kotlin.srcDir("$mcSourceDir/kotlin")
+        }
+    }
 }
 
 loom {
@@ -92,6 +196,7 @@ tasks.withType<JavaCompile>().configureEach {
     // If Javadoc is generated, this must be specified in that task too.
     options.encoding = "UTF-8"
     options.release.set(targetJavaVersion)
+    dependsOn(generateMixinTemplates)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
