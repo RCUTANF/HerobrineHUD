@@ -6,3 +6,10 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+rootProject.name = "HerobrineHUD-old"
+
+include("common")
+include("fabric")
+include("neoforge")
+
