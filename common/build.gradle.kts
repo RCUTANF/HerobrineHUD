@@ -6,9 +6,16 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+fun Project.stringPropertyOrNull(name: String): String? = findProperty(name)?.toString()
+
+fun Project.currentMinecraftVersion(): String = (
+    stringPropertyOrNull("debugVersion")
+        ?: stringPropertyOrNull("defaultMcVersion")
+        ?: "unknown"
+)
+
 val targetJavaVersion = 25
-val currentMinecraftVersion = rootProject.extra["currentMinecraftVersion"] as (Project) -> String
-val mcVersion = currentMinecraftVersion(project)
+val mcVersion = currentMinecraftVersion()
 val mcSourceDir = "src/mc$mcVersion"
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)

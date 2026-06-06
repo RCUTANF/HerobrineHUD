@@ -11,5 +11,6 @@ rootProject.name = "HerobrineHUD-old"
 
 include("common")
 include("fabric")
+include("fabric-remap")
 include("neoforge")
 

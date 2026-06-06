@@ -83,8 +83,14 @@ subprojects {
 val debugLoader = (findProperty("debugLoader") ?: "fabric").toString()
 val debugVersion = currentMinecraftVersion()
 
-fun resolveLoaderProject(loader: String): String = when (loader.lowercase()) {
-    "fabric" -> ":fabric"
+fun resolveFabricProject(version: String): String = if (version.startsWith("1.21.")) {
+    ":fabric-remap"
+} else {
+    ":fabric"
+}
+
+fun resolveLoaderProject(loader: String, version: String): String = when (loader.lowercase()) {
+    "fabric" -> resolveFabricProject(version)
     "neoforge" -> ":neoforge"
     else -> throw GradleException("Unsupported debugLoader: $loader")
 }
@@ -92,7 +98,7 @@ fun resolveLoaderProject(loader: String): String = when (loader.lowercase()) {
 tasks.register("runDebugClient") {
     group = "run"
     description = "Run debug client for the configured loader/version."
-    dependsOn("${resolveLoaderProject(debugLoader)}:runClient")
+    dependsOn("${resolveLoaderProject(debugLoader, debugVersion)}:runClient")
     doFirst {
         logger.lifecycle("Debug target: loader=$debugLoader, version=$debugVersion")
     }
@@ -101,7 +107,7 @@ tasks.register("runDebugClient") {
 tasks.register("runDebugServer") {
     group = "run"
     description = "Run debug server for the configured loader/version."
-    dependsOn("${resolveLoaderProject(debugLoader)}:runServer")
+    dependsOn("${resolveLoaderProject(debugLoader, debugVersion)}:runServer")
     doFirst {
         logger.lifecycle("Debug target: loader=$debugLoader, version=$debugVersion")
     }

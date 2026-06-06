@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.jvm.tasks.ProcessResources
@@ -7,7 +9,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    id("net.fabricmc.fabric-loom") version "1.16.2"
+    id("net.fabricmc.fabric-loom-remap") version "1.15.5"
     id("maven-publish")
 }
 
@@ -65,18 +67,26 @@ fun mcVersionCode(version: String): Int {
 }
 
 val mcVersion = currentMinecraftVersion()
-val isActiveFabricProject = !mcVersion.startsWith("1.21.")
-val effectiveMcVersion = if (isActiveFabricProject) mcVersion else "26.1"
+val isActiveFabricProject = mcVersion.startsWith("1.21.")
+val effectiveMcVersion = if (isActiveFabricProject) mcVersion else "1.21.11"
 
-logger.lifecycle("Fabric modern target mcVersion=$mcVersion effective=$effectiveMcVersion active=$isActiveFabricProject")
+logger.lifecycle("Fabric remap target mcVersion=$mcVersion effective=$effectiveMcVersion active=$isActiveFabricProject")
 
 run {
     val baseName = project.property("archives_base_name") as String
     val loaderVersion = resolveVersionedProperty(project, "loader_version", effectiveMcVersion)
     val kotlinLoaderVersion = resolveVersionedProperty(project, "kotlin_loader_version", effectiveMcVersion)
     val fabricApiVersion = resolveVersionedProperty(project, "fabric_version", effectiveMcVersion)
-    val fabricSourceRoot = "src"
+    val parchmentVersion = resolveVersionedProperty(project, "parchment_version", effectiveMcVersion)
+    val parchmentCoordinate = "org.parchmentmc.data:parchment-$effectiveMcVersion:$parchmentVersion@zip"
+    val fabricSourceRoot = "../fabric/src"
     val mcSourceDir = "$fabricSourceRoot/mc$effectiveMcVersion"
+
+    repositories {
+        maven("https://maven.parchmentmc.org") {
+            name = "ParchmentMC"
+        }
+    }
 
     base {
         archivesName.set("$baseName-$effectiveMcVersion")
@@ -85,6 +95,7 @@ run {
     val targetJavaVersion = 25
     java {
         toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+        withSourcesJar()
     }
 
     fun processMixinTemplate(input: String, versionCode: Int): String {
@@ -221,10 +232,14 @@ run {
 
     dependencies {
         minecraft("com.mojang:minecraft:$effectiveMcVersion")
+        mappings(loom.layered {
+            officialMojangMappings()
+            parchment(parchmentCoordinate)
+        })
 
-        implementation("net.fabricmc:fabric-loader:$loaderVersion")
-        implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
-        implementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
+        modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
+        modImplementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
+        modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
         implementation(project(":common"))
     }
 
@@ -260,6 +275,11 @@ run {
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions.jvmTarget.set(JvmTarget.fromTarget(targetJavaVersion.toString()))
         dependsOn(generateMixinTemplates)
+    }
+
+    tasks.named<Jar>("sourcesJar") {
+        dependsOn(generateMixinTemplates)
+        exclude("**/.gitkeep")
     }
 
     tasks.jar {
