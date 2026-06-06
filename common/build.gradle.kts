@@ -7,11 +7,8 @@ plugins {
 }
 
 val targetJavaVersion = 25
-val mcVersion = (
-    findProperty("debugVersion")
-        ?: findProperty("defaultMcVersion")
-        ?: "unknown"
-).toString()
+val currentMinecraftVersion = rootProject.extra["currentMinecraftVersion"] as (Project) -> String
+val mcVersion = currentMinecraftVersion(project)
 val mcSourceDir = "src/mc$mcVersion"
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)

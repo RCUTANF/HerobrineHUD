@@ -6,6 +6,66 @@ plugins {
 val modVersion = project.property("mod_version") as String
 val mavenGroup = project.property("maven_group") as String
 
+fun Project.stringPropertyOrNull(name: String): String? = findProperty(name)?.toString()
+
+fun Project.currentMinecraftVersion(): String = (
+    stringPropertyOrNull("debugVersion")
+        ?: stringPropertyOrNull("defaultMcVersion")
+        ?: stringPropertyOrNull("minecraft_version")
+        ?: "unknown"
+)
+
+fun versionPropertySuffix(version: String): String {
+    val parts = version.split('.')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+
+    if (parts.isEmpty()) {
+        throw GradleException("Invalid Minecraft version: $version")
+    }
+
+    return parts.joinToString("_")
+}
+
+fun resolveVersionedProperty(
+    project: Project,
+    baseName: String,
+    version: String = project.currentMinecraftVersion()
+): String {
+    val versionedName = "${baseName}_${versionPropertySuffix(version)}"
+    return project.stringPropertyOrNull(versionedName)
+        ?: project.stringPropertyOrNull(baseName)
+        ?: throw GradleException(
+            "Missing property '$baseName' for Minecraft version '$version' (also tried '$versionedName')."
+        )
+}
+
+fun mcVersionCode(version: String): Int {
+    val parts = version.split('.').map { segment ->
+        segment.trim().toIntOrNull()
+            ?: throw GradleException("Invalid Minecraft version segment '$segment' in '$version'.")
+    }
+
+    if (parts.isEmpty()) {
+        throw GradleException("Invalid Minecraft version: $version")
+    }
+
+    return parts.fold(0) { acc, part ->
+        if (part !in 0..999) {
+            throw GradleException("Minecraft version segment '$part' in '$version' is out of supported range 0..999.")
+        }
+
+        acc * 1_000 + part
+    }
+}
+
+extra["currentMinecraftVersion"] = { project: Project -> project.currentMinecraftVersion() }
+extra["resolveVersionedProperty"] = { project: Project, baseName: String, version: String ->
+    resolveVersionedProperty(project, baseName, version)
+}
+extra["mcVersionCode"] = { version: String -> mcVersionCode(version) }
+extra["versionPropertySuffix"] = { version: String -> versionPropertySuffix(version) }
+
 allprojects {
     version = modVersion
     group = mavenGroup
@@ -21,12 +81,7 @@ subprojects {
 }
 
 val debugLoader = (findProperty("debugLoader") ?: "fabric").toString()
-val debugVersion = (
-    findProperty("debugVersion")
-        ?: findProperty("defaultMcVersion")
-        ?: findProperty("minecraft_version")
-        ?: "unknown"
-).toString()
+val debugVersion = currentMinecraftVersion()
 
 fun resolveLoaderProject(loader: String): String = when (loader.lowercase()) {
     "fabric" -> ":fabric"

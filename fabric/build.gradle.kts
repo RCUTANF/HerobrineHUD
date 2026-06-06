@@ -9,12 +9,15 @@ plugins {
 }
 
 val baseName = project.property("archives_base_name") as String
-val mcVersion = (
-    findProperty("debugVersion")
-        ?: findProperty("defaultMcVersion")
-        ?: project.property("minecraft_version")
-).toString()
+val currentMinecraftVersion = rootProject.extra["currentMinecraftVersion"] as (Project) -> String
+val resolveVersionedProperty = rootProject.extra["resolveVersionedProperty"] as (Project, String, String) -> String
+val resolveMcVersionCode = rootProject.extra["mcVersionCode"] as (String) -> Int
+
+val mcVersion = currentMinecraftVersion(project)
 val mcSourceDir = "src/mc$mcVersion"
+val loaderVersion = resolveVersionedProperty(project, "loader_version", mcVersion)
+val kotlinLoaderVersion = resolveVersionedProperty(project, "kotlin_loader_version", mcVersion)
+val fabricApiVersion = resolveVersionedProperty(project, "fabric_version", mcVersion)
 
 base {
     // Append the targeted Minecraft version to the archive name so generated jars
@@ -29,15 +32,6 @@ java {
     // if it is present.
     // If you remove this line, sources will not be generated.
     withSourcesJar()
-}
-
-fun mcVersionCode(version: String): Int {
-    val parts = version.split('.').mapNotNull { it.toIntOrNull() }
-    return when (parts.size) {
-        2 -> parts[0] * 100 + parts[1] * 10
-        3 -> parts[0] * 1000 + parts[1] * 10 + parts[2]
-        else -> parts.joinToString("").toIntOrNull() ?: 0
-    }
 }
 
 fun processMixinTemplate(input: String, versionCode: Int): String {
@@ -102,13 +96,13 @@ val mixinGeneratedDir = layout.buildDirectory.dir("generated/sources/mixinTempla
 val generateMixinTemplates = tasks.register("generateMixinTemplates") {
     inputs.dir(mixinTemplateDir)
     inputs.property("mcVersion", mcVersion)
-    inputs.property("mcVersionCode", mcVersionCode(mcVersion))
+    inputs.property("mcVersionCode", resolveMcVersionCode(mcVersion))
     outputs.dir(mixinGeneratedDir)
     doLast {
         if (!mixinTemplateDir.exists()) return@doLast
         val outputDir = mixinGeneratedDir.get().asFile
         outputDir.deleteRecursively()
-        val versionCode = mcVersionCode(mcVersion)
+        val versionCode = resolveMcVersionCode(mcVersion)
         fileTree(mixinTemplateDir).matching { include("**/*.template.java") }.forEach { templateFile ->
             val relativePath = templateFile.relativeTo(mixinTemplateDir).path
                 .removeSuffix(".template.java") + ".java"
@@ -165,18 +159,18 @@ fabricApi {
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft("com.mojang:minecraft:$mcVersion")
-    implementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
-    implementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
+    implementation("net.fabricmc:fabric-loader:$loaderVersion")
+    implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
 
-    implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+    implementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
     implementation(project(":common"))
 }
 
 tasks.processResources {
     inputs.property("version", project.version)
     inputs.property("minecraft_version", mcVersion)
-    inputs.property("loader_version", project.property("loader_version"))
-    inputs.property("kotlin_loader_version", project.property("kotlin_loader_version"))
+    inputs.property("loader_version", loaderVersion)
+    inputs.property("kotlin_loader_version", kotlinLoaderVersion)
     filteringCharset = "UTF-8"
 
     filesMatching("fabric.mod.json") {
@@ -184,8 +178,8 @@ tasks.processResources {
             mapOf(
                 "version" to project.version,
                 "minecraft_version" to mcVersion,
-                "loader_version" to project.property("loader_version"),
-                "kotlin_loader_version" to project.property("kotlin_loader_version")
+                "loader_version" to loaderVersion,
+                "kotlin_loader_version" to kotlinLoaderVersion
             )
         )
     }
