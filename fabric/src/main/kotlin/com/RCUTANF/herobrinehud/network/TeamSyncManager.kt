@@ -4,7 +4,6 @@ import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import com.RCUTANF.herobrinehud.collector.TeamManager
 import kotlinx.serialization.json.Json
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -87,8 +86,8 @@ object TeamSyncManager {
         val jsonStr = json.encodeToString(data)
         val payload = FullSyncPayload(jsonStr)
 
-        if (ServerPlayNetworking.canSend(player, HudPayloadIds.FULL_SYNC)) {
-            ServerPlayNetworking.send(player, payload)
+        if (HudNetworkingCompat.canSendFullSync(player)) {
+            HudNetworkingCompat.sendFullSync(player, payload)
             LOGGER.debug("Sent full sync to {} ({} teams)", player.gameProfile.name, allTeams.size)
         } else {
             LOGGER.warn("Unable to send full sync to {} (channel not ready)", player.gameProfile.name)
@@ -108,8 +107,8 @@ object TeamSyncManager {
 
         for ((uuid, player) in subscribers) {
             try {
-                if (ServerPlayNetworking.canSend(player, HudPayloadIds.INCREMENTAL_UPDATE)) {
-                    ServerPlayNetworking.send(player, payload)
+                if (HudNetworkingCompat.canSendIncrementalUpdate(player)) {
+                    HudNetworkingCompat.sendIncrementalUpdate(player, payload)
                 } else {
                     // 无法发送，可能已断线但尚未清理
                     toRemove.add(uuid)

@@ -6,9 +6,7 @@ import com.RCUTANF.herobrinehud.collector.TeamManager
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
 import org.slf4j.LoggerFactory
 
@@ -67,52 +65,37 @@ class Herobrinehud : ModInitializer {
      * 注册所有自定义 Payload 类型
      */
     private fun registerPayloads() {
-        // S2C payloads（服务端发给客户端）
-        PayloadTypeRegistry.clientboundPlay().register(HudPayloadIds.FULL_SYNC, FullSyncPayload.STREAM_CODEC)
-        PayloadTypeRegistry.clientboundPlay().register(HudPayloadIds.INCREMENTAL_UPDATE, IncrementalUpdatePayload.STREAM_CODEC)
-
-        // C2S payloads（客户端发给服务端）
-        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.SUBSCRIBE, SubscribePayload.STREAM_CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.UNSUBSCRIBE, UnsubscribePayload.STREAM_CODEC)
-
-        PayloadTypeRegistry.serverboundPlay().register(HudPayloadIds.SPECTATE_PLAYER, SpectatePlayerPayload.STREAM_CODEC)
+        HudNetworkingCompat.registerPayloads()
     }
 
     /**
      * 注册 C2S 网络接收器（处理客户端的订阅/取消订阅请求）
      */
     private fun registerC2SReceivers() {
-        // 订阅请求
-        ServerPlayNetworking.registerGlobalReceiver(HudPayloadIds.SUBSCRIBE) { _, context ->
-            TeamSyncManager.subscribe(context.player())
+        HudNetworkingCompat.registerSubscribeReceiver { player ->
+            TeamSyncManager.subscribe(player)
         }
 
-        // 取消订阅请求
-        ServerPlayNetworking.registerGlobalReceiver(HudPayloadIds.UNSUBSCRIBE) { _, context ->
-            TeamSyncManager.unsubscribe(context.player())
+        HudNetworkingCompat.registerUnsubscribeReceiver { player ->
+            TeamSyncManager.unsubscribe(player)
         }
 
-        // 旁观玩家请求
-        ServerPlayNetworking.registerGlobalReceiver(HudPayloadIds.SPECTATE_PLAYER) { payload, context ->
-            val requester = context.player()
+        HudNetworkingCompat.registerSpectateReceiver { payload, requester, server ->
             val targetUuid = payload.targetPlayerUuid
 
-            // 在服务器主线程执行
-            context.server().execute {
-                val targetPlayer = context.server().playerList.getPlayer(targetUuid)
+            server.execute {
+                val targetPlayer = server.playerList.getPlayer(targetUuid)
 
                 if (targetPlayer == null) {
                     LOGGER.warn("Player {} requested to spectate non-existent player: {}", requester.name.string, targetUuid)
                     return@execute
                 }
 
-                // 检查请求者是否处于旁观模式
                 if (!requester.isSpectator) {
                     LOGGER.warn("Player {} is not in spectator mode and cannot change spectate target", requester.name.string)
                     return@execute
                 }
 
-                // 设置旁观目标
                 requester.setCamera(targetPlayer)
                 LOGGER.info("Player {} started spectating {}", requester.name.string, targetPlayer.name.string)
             }
