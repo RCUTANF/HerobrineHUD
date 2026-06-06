@@ -18,6 +18,20 @@ val mcSourceDir = "src/mc$mcVersion"
 val loaderVersion = resolveVersionedProperty(project, "loader_version", mcVersion)
 val kotlinLoaderVersion = resolveVersionedProperty(project, "kotlin_loader_version", mcVersion)
 val fabricApiVersion = resolveVersionedProperty(project, "fabric_version", mcVersion)
+val useParchmentMappings = mcVersion.startsWith("1.21.")
+val parchmentVersion = if (useParchmentMappings) {
+    resolveVersionedProperty(project, "parchment_version", mcVersion)
+} else {
+    null
+}
+
+repositories {
+    if (useParchmentMappings) {
+        maven("https://maven.parchmentmc.org") {
+            name = "ParchmentMC"
+        }
+    }
+}
 
 base {
     // Append the targeted Minecraft version to the archive name so generated jars
@@ -159,6 +173,17 @@ fabricApi {
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft("com.mojang:minecraft:$mcVersion")
+
+    if (useParchmentMappings) {
+        add(
+            "mappings",
+            loom.layered {
+                officialMojangMappings()
+                parchment("org.parchmentmc.data:parchment-$mcVersion:$parchmentVersion@zip")
+            }
+        )
+    }
+
     implementation("net.fabricmc:fabric-loader:$loaderVersion")
     implementation("net.fabricmc:fabric-language-kotlin:$kotlinLoaderVersion")
 
@@ -197,6 +222,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.fromTarget(targetJavaVersion.toString()))
+    dependsOn(generateMixinTemplates)
+}
+
+tasks.named<Jar>("sourcesJar") {
     dependsOn(generateMixinTemplates)
 }
 
