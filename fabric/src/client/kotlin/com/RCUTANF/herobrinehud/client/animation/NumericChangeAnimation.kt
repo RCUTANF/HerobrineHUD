@@ -3,6 +3,7 @@ package com.RCUTANF.herobrinehud.client.animation
 import com.RCUTANF.herobrinehud.client.ui.CardLayout
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.text
 
 /**
  * 数值变化动画（通用）

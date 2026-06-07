@@ -9,6 +9,9 @@ import com.mojang.authlib.GameProfile
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.entity
+import net.minecraft.client.gui.item
+import net.minecraft.client.gui.text
 import net.minecraft.client.player.RemotePlayer
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher
 import net.minecraft.client.renderer.entity.EntityRenderer
@@ -513,7 +516,7 @@ object PlayerCardRenderer {
     private fun extractRenderState(entity: LivingEntity): EntityRenderState {
         val dispatcher: EntityRenderDispatcher = Minecraft.getInstance().entityRenderDispatcher
         val renderer = dispatcher.getRenderer(entity) as EntityRenderer<LivingEntity, EntityRenderState>
-        val state = renderer.createRenderState(entity, 1.0F)
+        val state = renderer.createRenderState()
         state.lightCoords = 15728880
         state.shadowPieces.clear()
         state.outlineColor = 0

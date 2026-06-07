@@ -11,9 +11,6 @@ import com.RCUTANF.herobrinehud.network.SubscribePayload
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
-import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 
 class HerobrinehudClient : ClientModInitializer {
@@ -29,8 +26,7 @@ class HerobrinehudClient : ClientModInitializer {
         HudConfig.load()
 
         // ──────────── 注册 HUD 渲染 ────────────
-        val hudId = Identifier.fromNamespaceAndPath(Herobrinehud.MOD_ID, "player_cards")
-        HudElementRegistry.attachElementBefore(VanillaHudElements.HOTBAR, hudId, HudRenderer)
+        HudRenderCompat.register(HudRenderer)
 
         // ──────────── 注册快捷键 ────────────
         ModKeybindings.register()
