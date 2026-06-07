@@ -517,6 +517,7 @@ object PlayerCardRenderer {
         val dispatcher: EntityRenderDispatcher = Minecraft.getInstance().entityRenderDispatcher
         val renderer = dispatcher.getRenderer(entity) as EntityRenderer<LivingEntity, EntityRenderState>
         val state = renderer.createRenderState()
+        renderer.extractRenderState(entity, state, 1.0F)
         state.lightCoords = 15728880
         state.shadowPieces.clear()
         state.outlineColor = 0
