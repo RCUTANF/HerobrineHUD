@@ -7,7 +7,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "HerobrineHUD-old"
+rootProject.name = "HerobrineHUD"
 
 include("common")
 include("fabric")
