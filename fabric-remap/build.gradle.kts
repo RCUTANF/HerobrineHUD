@@ -80,7 +80,9 @@ run {
     val parchmentVersion = resolveVersionedProperty(project, "parchment_version", effectiveMcVersion)
     val parchmentCoordinate = "org.parchmentmc.data:parchment-$effectiveMcVersion:$parchmentVersion@zip"
     val fabricSourceRoot = "../fabric/src"
-    val mcSourceDir = "$fabricSourceRoot/mc$effectiveMcVersion"
+    val mcVersionSourceRoot = "$fabricSourceRoot/mc$effectiveMcVersion"
+    val mcMainSourceDir = "$mcVersionSourceRoot/main"
+    val mcClientSourceDir = "$mcVersionSourceRoot/client"
 
     repositories {
         maven("https://maven.parchmentmc.org") {
@@ -181,15 +183,15 @@ run {
     sourceSets.named("main") {
         java.srcDir("$fabricSourceRoot/main/java")
         resources.srcDir("$fabricSourceRoot/main/resources")
-        java.srcDir("$mcSourceDir/java")
-        resources.srcDir("$mcSourceDir/resources")
+        java.srcDir("$mcMainSourceDir/java")
+        resources.srcDir("$mcMainSourceDir/resources")
         java.srcDir(mixinGeneratedDir)
     }
 
     kotlin {
         sourceSets.named("main") {
             kotlin.srcDir("$fabricSourceRoot/main/kotlin")
-            kotlin.srcDir("$mcSourceDir/kotlin")
+            kotlin.srcDir("$mcMainSourceDir/kotlin")
         }
     }
 
@@ -216,11 +218,14 @@ run {
     sourceSets.named("client") {
         java.srcDir("$fabricSourceRoot/client/java")
         resources.srcDir("$fabricSourceRoot/client/resources")
+        java.srcDir("$mcClientSourceDir/java")
+        resources.srcDir("$mcClientSourceDir/resources")
     }
 
     kotlin {
         sourceSets.named("client") {
             kotlin.srcDir("$fabricSourceRoot/client/kotlin")
+            kotlin.srcDir("$mcClientSourceDir/kotlin")
         }
     }
 
