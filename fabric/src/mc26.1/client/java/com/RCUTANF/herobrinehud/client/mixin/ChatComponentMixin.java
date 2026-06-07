@@ -1,7 +1,7 @@
 package com.RCUTANF.herobrinehud.client.mixin;
 
-import net.minecraft.client.gui.components.ChatComponent;
 import java.util.function.Consumer;
+import net.minecraft.client.gui.components.ChatComponent;
 import org.joml.Matrix3x2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
