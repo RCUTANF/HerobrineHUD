@@ -1,0 +1,127 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+      - "[0-9]*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-and-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build MC ${{ matrix.minecraft-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft-version: "26.1"
+            gradle-project: ":fabric"
+            artifact-dir: "fabric/build/libs"
+          - minecraft-version: "1.21.11"
+            gradle-project: ":fabric-remap"
+            artifact-dir: "fabric-remap/build/libs"
+          - minecraft-version: "1.21.4"
+            gradle-project: ":fabric-remap"
+            artifact-dir: "fabric-remap/build/libs"
+          - minecraft-version: "1.21.1"
+            gradle-project: ":fabric-remap"
+            artifact-dir: "fabric-remap/build/libs"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew ${{ matrix.gradle-project }}:build -PdebugVersion=${{ matrix.minecraft-version }} --stacktrace
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: herobrinehud-mc-${{ matrix.minecraft-version }}
+          path: |
+            ${{ matrix.artifact-dir }}/*.jar
+            !${{ matrix.artifact-dir }}/*-sources.jar
+            !${{ matrix.artifact-dir }}/*-dev.jar
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Extract release notes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          tag = os.environ["GITHUB_REF_NAME"]
+          version = tag[1:] if tag.startswith("v") else tag
+          headings = re.finditer(r"^##\s+(?:\[(?P<bracket>[^\]]+)\]|(?P<plain>.+?))\s*$", changelog, re.MULTILINE)
+          sections = []
+
+          for match in headings:
+              title = (match.group("bracket") or match.group("plain")).strip()
+              sections.append((title, match.end()))
+
+          def find_notes(candidates):
+              for index, (title, start) in enumerate(sections):
+                  if title not in candidates:
+                      continue
+                  end = sections[index + 1][1] if index + 1 < len(sections) else len(changelog)
+                  body = changelog[start:end]
+                  next_heading = re.search(r"^##\s+", body, re.MULTILINE)
+                  if next_heading:
+                      body = body[:next_heading.start()]
+                  return body.strip()
+              return ""
+
+          notes = find_notes({version, tag}) or find_notes({"Unreleased"})
+
+          if not notes:
+              notes = f"Release {tag}"
+
+          Path("release-notes.md").write_text(notes + "\n", encoding="utf-8")
+          PY
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: release-artifacts/*.jar
