@@ -160,14 +160,15 @@ run {
     val mixinGeneratedDir = layout.buildDirectory.dir("generated/sources/mixinTemplates")
 
     val generateMixinTemplates = tasks.register("generateMixinTemplates") {
-        inputs.dir(mixinTemplateDir)
+        inputs.dir(mixinTemplateDir).optional()
         inputs.property("mcVersion", effectiveMcVersion)
         inputs.property("mcVersionCode", mcVersionCode(effectiveMcVersion))
         outputs.dir(mixinGeneratedDir)
         doLast {
-            if (!mixinTemplateDir.exists()) return@doLast
             val outputDir = mixinGeneratedDir.get().asFile
             outputDir.deleteRecursively()
+            outputDir.mkdirs()
+            if (!mixinTemplateDir.exists()) return@doLast
             val versionCode = mcVersionCode(effectiveMcVersion)
             fileTree(mixinTemplateDir).matching { include("**/*.template.java") }.forEach { templateFile ->
                 val relativePath = templateFile.relativeTo(mixinTemplateDir).path
