@@ -111,6 +111,9 @@ data class ConfigData(
      */
     val playerPlacements: MutableMap<String, PlayerPlacement> = mutableMapOf(),
 
+    /** 当前选中的 HUD Provider */
+    var hudProviderId: String = "herobrinehud:classic",
+
     /** HUD 是否可见 */
     var hudVisible: Boolean = true,
 
