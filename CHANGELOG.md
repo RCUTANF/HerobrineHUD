@@ -7,7 +7,7 @@
 - Added split Fabric build pipelines:
   - `:fabric` for `26.1+`
   - `:fabric-remap` for `1.21.x`
-- Added layered Mojang official mappings + Parchment support for `1.21.1`, `1.21.4`, and `1.21.11`
+- Added layered Mojang official mappings + Parchment support for the active `1.21.11` remap build
 - Added version-aware main/client source layout under `fabric/src/mc<version>/main` and `fabric/src/mc<version>/client`
 - Added version bridges for networking, HUD render registration, and keybinding registration
 - Added a HUD provider registry and public provider API for registering alternate HUD implementations
@@ -23,12 +23,13 @@
 - Moved classic HUD rendering behind the provider system
 - Updated the classic HUD renderer to consume the public data API instead of internal client state directly
 - Relaxed the Fabric metadata Minecraft dependency for `26.1` builds to allow patch-compatible `26.1.x` versions
+- Disabled build and release targets for unfinished `1.21.4` and `1.21.1` ports
 
 ### Fixed
-- Fixed `1.21.11` build and runtime compatibility issues across Fabric networking, GUI, and mixin targets
 - Fixed shared player avatar rendering state extraction regression that caused the 3D player model to render too high in player cards
 - Fixed `26.1.2` being rejected by Fabric Loader even though the `26.1` build is patch-compatible
 
 ### Notes
+- `1.21.4` and `1.21.1` source directories remain as incomplete porting placeholders and are not release targets
 - NeoForge remains stubbed and is not part of this completed migration
 - PowerShell users should quote version overrides such as `"-PdebugVersion=1.21.11"`

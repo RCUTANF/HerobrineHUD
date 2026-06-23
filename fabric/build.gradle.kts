@@ -20,6 +20,14 @@ fun Project.currentMinecraftVersion(): String = (
         ?: "unknown"
 )
 
+fun Project.enabledMinecraftVersions(): Set<String> =
+    stringPropertyOrNull("supportedVersions")
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.toSet()
+        ?: emptySet()
+
 fun versionPropertySuffix(version: String): String {
     val parts = version.split('.')
         .map { it.trim() }
@@ -65,7 +73,9 @@ fun mcVersionCode(version: String): Int {
 }
 
 val mcVersion = currentMinecraftVersion()
-val isActiveFabricProject = !mcVersion.startsWith("1.21.")
+val enabledMcVersions = enabledMinecraftVersions()
+val isEnabledMcVersion = enabledMcVersions.isEmpty() || mcVersion in enabledMcVersions
+val isActiveFabricProject = isEnabledMcVersion && !mcVersion.startsWith("1.21.")
 val effectiveMcVersion = if (isActiveFabricProject) mcVersion else "26.1"
 
 logger.lifecycle("Fabric modern target mcVersion=$mcVersion effective=$effectiveMcVersion active=$isActiveFabricProject")

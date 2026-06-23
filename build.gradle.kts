@@ -15,6 +15,14 @@ fun Project.currentMinecraftVersion(): String = (
         ?: "unknown"
 )
 
+fun Project.enabledMinecraftVersions(): Set<String> =
+    stringPropertyOrNull("supportedVersions")
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.toSet()
+        ?: emptySet()
+
 fun versionPropertySuffix(version: String): String {
     val parts = version.split('.')
         .map { it.trim() }
@@ -82,6 +90,13 @@ subprojects {
 
 val debugLoader = (findProperty("debugLoader") ?: "fabric").toString()
 val debugVersion = currentMinecraftVersion()
+val enabledDebugVersions = enabledMinecraftVersions()
+
+if (enabledDebugVersions.isNotEmpty() && debugVersion !in enabledDebugVersions) {
+    throw GradleException(
+        "Minecraft $debugVersion is not enabled for builds. Enabled versions: ${enabledDebugVersions.joinToString(", ")}."
+    )
+}
 
 fun resolveFabricProject(version: String): String = if (version.startsWith("1.21.")) {
     ":fabric-remap"
