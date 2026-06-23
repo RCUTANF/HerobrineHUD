@@ -75,6 +75,8 @@ run {
     val loaderVersion = resolveVersionedProperty(project, "loader_version", effectiveMcVersion)
     val kotlinLoaderVersion = resolveVersionedProperty(project, "kotlin_loader_version", effectiveMcVersion)
     val fabricApiVersion = resolveVersionedProperty(project, "fabric_version", effectiveMcVersion)
+    val minecraftDependency = project.stringPropertyOrNull("minecraft_dependency_${versionPropertySuffix(effectiveMcVersion)}")
+        ?: effectiveMcVersion
     val fabricSourceRoot = "src"
     val mcVersionSourceRoot = "$fabricSourceRoot/mc$effectiveMcVersion"
     val mcMainSourceDir = "$mcVersionSourceRoot/main"
@@ -236,6 +238,7 @@ run {
     tasks.processResources {
         inputs.property("version", project.version)
         inputs.property("minecraft_version", effectiveMcVersion)
+        inputs.property("minecraft_dependency", minecraftDependency)
         inputs.property("loader_version", loaderVersion)
         inputs.property("kotlin_loader_version", kotlinLoaderVersion)
         filteringCharset = "UTF-8"
@@ -245,6 +248,7 @@ run {
                 mapOf(
                     "version" to project.version,
                     "minecraft_version" to effectiveMcVersion,
+                    "minecraft_dependency" to minecraftDependency,
                     "loader_version" to loaderVersion,
                     "kotlin_loader_version" to kotlinLoaderVersion
                 )
