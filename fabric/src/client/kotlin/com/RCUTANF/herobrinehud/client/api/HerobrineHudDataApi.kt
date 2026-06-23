@@ -5,8 +5,12 @@ import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.client.HudConfig
 import com.RCUTANF.herobrinehud.client.PlayerPlacement
 import com.RCUTANF.herobrinehud.client.ui.HudSelectionState
+import com.RCUTANF.herobrinehud.data.PlayerEffect
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import com.RCUTANF.herobrinehud.data.TeamInfo
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Read-only facade for HerobrineHUD client data.
@@ -15,6 +19,10 @@ import com.RCUTANF.herobrinehud.data.TeamInfo
  * do not need to depend on ClientTeamData, HudSelectionState, or HudConfig.
  */
 object HerobrineHudDataApi {
+    private val snapshotJson = Json {
+        encodeDefaults = true
+    }
+
     /** Whether the client has received at least one full sync from the server. */
     val isSynced: Boolean
         get() = ClientTeamData.isSynced
@@ -122,13 +130,89 @@ object HerobrineHudDataApi {
 
     /** Returns whether the supplied player UUID is the current spectating target. */
     fun isSpectating(uuid: String): Boolean = ClientTeamData.isSpectating(uuid)
+
+    /**
+     * Creates a serializable point-in-time snapshot of the current client HUD data.
+     *
+     * The returned value is detached from internal maps and lists so callers can
+     * serialize or inspect it without mutating HerobrineHUD's live client state.
+     */
+    fun snapshot(): HerobrineHudSnapshot =
+        HerobrineHudSnapshot(
+            isSynced = isSynced,
+            teams = teams().map(::copyTeam),
+            allPlayers = allPlayers().map(::copyPlayer),
+            leftPlayers = leftPlayers().map(::copyPlayer),
+            rightPlayers = rightPlayers().map(::copyPlayer),
+            unassignedPlayers = unassignedPlayers().map(::copyPlayer),
+            playerAssignments = playerPlacements().toMap(),
+            hotkeys = hotkeys(),
+            spectatingPlayerUuid = spectatingPlayerUuid(),
+            settings = settings,
+            currentHudId = currentHudId
+        )
+
+    /**
+     * Encodes the current HUD snapshot as JSON.
+     *
+     * A custom [Json] instance can be supplied by callers that need different
+     * formatting or unknown-key behavior.
+     */
+    fun snapshotJson(json: Json = snapshotJson): String =
+        json.encodeToString(snapshot())
+
+    private fun copyTeam(team: TeamInfo): TeamInfo =
+        team.copy(
+            players = team.players.map(::copyPlayer).toMutableList(),
+            customData = team.customData.toMutableMap()
+        )
+
+    private fun copyPlayer(player: PlayerInfo): PlayerInfo =
+        player.copy(
+            equipment = player.equipment.copy(),
+            effects = player.effects.map(PlayerEffect::copy).toMutableList(),
+            customData = player.customData.toMutableMap()
+        )
 }
+
+/**
+ * Serializable data snapshot for HUD implementations and external UI systems.
+ *
+ * This type is intentionally a value transfer object: it mirrors the public
+ * read-only Data API at the time [HerobrineHudDataApi.snapshot] is called.
+ */
+@Serializable
+data class HerobrineHudSnapshot(
+    /** Whether the client has received at least one full sync from the server. */
+    val isSynced: Boolean,
+    /** All synced teams, including their player lists. */
+    val teams: List<TeamInfo>,
+    /** All known players from all synced teams. */
+    val allPlayers: List<PlayerInfo>,
+    /** Players currently assigned to the left HUD side. */
+    val leftPlayers: List<PlayerInfo>,
+    /** Players currently assigned to the right HUD side. */
+    val rightPlayers: List<PlayerInfo>,
+    /** Synced players that are not currently assigned to either HUD side. */
+    val unassignedPlayers: List<PlayerInfo>,
+    /** Player placement assignments keyed by player UUID. */
+    val playerAssignments: Map<String, PlayerPlacement>,
+    /** Visible HUD hotkey mappings keyed by player UUID. */
+    val hotkeys: Map<String, Int>,
+    /** UUID of the player currently being spectated, if tracked. */
+    val spectatingPlayerUuid: String?,
+    /** User-facing HUD display settings. */
+    val settings: HudSettingsView,
+    /** The id of the currently selected HUD provider. */
+    val currentHudId: String
+)
 
 /**
  * Read-only view of local HUD display settings.
  *
  * These values mirror [HudConfig] at the time this view is created.
  */
+@Serializable
 data class HudSettingsView(
     /** Whether HerobrineHUD rendering is globally visible. */
     val hudVisible: Boolean,
