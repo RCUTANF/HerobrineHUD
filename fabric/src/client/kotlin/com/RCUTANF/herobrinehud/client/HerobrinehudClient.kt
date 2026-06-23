@@ -1,8 +1,6 @@
 package com.RCUTANF.herobrinehud.client
 
-import com.RCUTANF.herobrinehud.Herobrinehud
 import com.RCUTANF.herobrinehud.client.hud.BuiltInHudProviders
-import com.RCUTANF.herobrinehud.client.ui.HudRenderer
 import com.RCUTANF.herobrinehud.client.util.AvatarTextureCache
 import com.RCUTANF.herobrinehud.client.util.SpectatorTracker
 import com.RCUTANF.herobrinehud.network.FullSyncPayload
@@ -28,9 +26,6 @@ class HerobrinehudClient : ClientModInitializer {
 
         // ──────────── 注册 HUD Provider 中心 ────────────
         BuiltInHudProviders.registerAll()
-
-        // ──────────── 注册 HUD 渲染 ────────────
-        HudRenderCompat.register(HudRenderer)
 
         // ──────────── 注册快捷键 ────────────
         ModKeybindings.register()

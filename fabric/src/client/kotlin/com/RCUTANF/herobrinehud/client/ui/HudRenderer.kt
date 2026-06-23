@@ -4,6 +4,7 @@ import com.RCUTANF.herobrinehud.client.ClientTeamData
 import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.client.HudRenderable
 import com.RCUTANF.herobrinehud.client.HudConfig
+import com.RCUTANF.herobrinehud.client.hud.HudCenter
 import com.RCUTANF.herobrinehud.data.PlayerInfo
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -21,6 +22,7 @@ object HudRenderer : HudRenderable {
     private val L = CardLayout
 
     override fun renderHud(drawContext: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
+        if (!HudCenter.isCurrent(HudCenter.DEFAULT_HUD_ID)) return
         if (!HudSelectionState.isHudVisible()) return
         if (!HudSelectionState.hasValidSelection()) return
         if (!ClientTeamData.isSynced) return
