@@ -2,6 +2,7 @@ package com.RCUTANF.herobrinehud.client.ui
 
 import com.RCUTANF.herobrinehud.client.DisplaySide
 import com.RCUTANF.herobrinehud.client.HudConfig
+import com.RCUTANF.herobrinehud.client.hud.HudCenter
 import com.RCUTANF.herobrinehud.data.TeamInfo
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
@@ -54,6 +55,11 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
         val row2Y = row1Y + BTN_H + 4
 
         fun toggleLabel(label: String, on: Boolean) = if (on) "[$label:开]" else "[$label:关]"
+
+        addRenderableWidget(Button.builder(Component.literal(hudProviderLabel())) { _ ->
+            HudCenter.selectNext()
+            rebuildWidgets()
+        }.bounds(8, row1Y, 86, BTN_H).build())
 
         val btnW1 = 54
         val totalW1 = btnW1 * 4 + 6 * 3
@@ -216,6 +222,11 @@ class TeamSelectionScreen(parent: Screen?) : Screen(Component.literal("Herobrine
         val label = selectedTeam.displayName.ifBlank { selectedTeam.name }.take(8)
         val arrow = if (isOpen) "▲" else "▼"
         return "队伍: $label $arrow"
+    }
+
+    private fun hudProviderLabel(): String {
+        val name = HudCenter.current()?.displayName ?: "Unknown"
+        return "HUD: ${name.take(10)}"
     }
 
     private fun addTeamDropdownEntries(teams: List<TeamInfo>, row2Y: Int) {
