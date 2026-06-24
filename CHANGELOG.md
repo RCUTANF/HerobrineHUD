@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.2 - 2026-06-23
+## v0.1.2
 
 ### Added
 - Added official support for Minecraft `1.21.11`
@@ -30,6 +30,7 @@
 - Fixed `26.1.2` being rejected by Fabric Loader even though the `26.1` build is patch-compatible
 
 ### Notes
+- Release date: 2026-06-23
 - `1.21.4` and `1.21.1` source directories remain as incomplete porting placeholders and are not release targets
 - NeoForge remains stubbed and is not part of this completed migration
 - PowerShell users should quote version overrides such as `"-PdebugVersion=1.21.11"`
