@@ -148,7 +148,10 @@ jobs:
             minecraft-label: "26.1.x"
             artifact-name: "herobrinehud-mc-26.1"
             version-suffix: "mc26.1"
-            game-versions: ">=26.1 <26.2-"
+            game-versions: |
+              26.1
+              26.1.1
+              26.1.2
           - minecraft-version: "1.21.11"
             minecraft-label: "1.21.11"
             artifact-name: "herobrinehud-mc-1.21.11"
@@ -193,6 +196,7 @@ jobs:
           changelog: ${{ needs.release.outputs.release_notes }}
           loaders: fabric
           game-versions: ${{ matrix.game-versions }}
+          game-version-filter: none
           dependencies: |
             fabric-api(required)
             fabric-language-kotlin(required)
